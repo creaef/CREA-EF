@@ -16,6 +16,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { loginWithGoogleDrive, logoutGoogle, auth } from '../lib/firebase';
+import { fetchDriveItemsClient, readDriveFilesClient } from '../utils/driveClient';
 import { User } from 'firebase/auth';
 
 interface DriveItem {
@@ -203,22 +204,31 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken, folderId, search }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 401 || data.error?.includes('caducado') || data.error?.includes('iniciar sesión')) {
-          try {
-            localStorage.removeItem('sda_drive_access_token');
-          } catch (e) {}
-          setAccessToken('');
-          setErrorMsg('Tu sesión de Google Drive ha expirado. Por favor, haz clic en "Iniciar sesión con Google Drive" para conectar tu cuenta.');
-          return;
-        }
-        throw new Error(data.error || 'Error al obtener archivos de Google Drive.');
-      }
 
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        setItems(data.items || []);
+        return;
+      }
+    } catch (err) {
+      // Direct client fallback
+    }
+
+    // Direct Google Drive REST API Client Fallback (Firebase Hosting static deployment)
+    try {
+      const data = await fetchDriveItemsClient(accessToken, folderId, search);
       setItems(data.items || []);
     } catch (err: any) {
       console.error(err);
+      if (err.message?.includes('expirado') || err.message?.includes('401')) {
+        try {
+          localStorage.removeItem('sda_drive_access_token');
+        } catch (e) {}
+        setAccessToken('');
+        setErrorMsg('Tu sesión de Google Drive ha expirado. Por favor, haz clic en "Iniciar sesión con Google Drive" para reconectar tu cuenta.');
+        return;
+      }
       setErrorMsg(err.message || 'No se pudieron cargar los contenidos de tu Google Drive.');
     } finally {
       setLoadingItems(false);
@@ -278,19 +288,33 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
           fileIds: targetFileIds,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 401 || data.error?.includes('caducado') || data.error?.includes('iniciar sesión')) {
-          try {
-            localStorage.removeItem('sda_drive_access_token');
-          } catch (e) {}
-          setAccessToken('');
-          setErrorMsg('Tu sesión de Google Drive ha expirado. Por favor, haz clic en "Iniciar sesión con Google Drive" para conectar tu cuenta.');
-          return;
-        }
-        throw new Error(data.error || 'Error al leer los elementos seleccionados de Google Drive.');
-      }
 
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        const primaryName =
+          targetFolderIds.length > 0
+            ? `${targetFolderIds.length} Carpeta(s) de Drive`
+            : `${targetFileIds.length} Documento(s) de Drive`;
+
+        onSelectFolderAndContent({
+          folderId: targetFolderIds[0] || 'multi-selection',
+          folderName: primaryName,
+          documentationText: data.documentationText || '',
+          fileCount: data.fileCount || 0,
+          sourceFiles: data.sourceFiles || [],
+        });
+
+        onClose();
+        return;
+      }
+    } catch (err) {
+      // Direct client fallback
+    }
+
+    // Direct Google Drive REST API Client Fallback
+    try {
+      const data = await readDriveFilesClient(accessToken, targetFolderIds, targetFileIds);
       const primaryName =
         targetFolderIds.length > 0
           ? `${targetFolderIds.length} Carpeta(s) de Drive`
@@ -299,15 +323,15 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
       onSelectFolderAndContent({
         folderId: targetFolderIds[0] || 'multi-selection',
         folderName: primaryName,
-        documentationText: data.documentationText || '',
-        fileCount: data.fileCount || 0,
-        sourceFiles: data.sourceFiles || [],
+        documentationText: data.text || '',
+        fileCount: data.filesCount || 1,
+        sourceFiles: [],
       });
 
       onClose();
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Error al importar contenidos de la selección.');
+      setErrorMsg(err.message || 'No se pudieron leer los elementos seleccionados de Google Drive.');
     } finally {
       setLoadingRead(false);
     }
