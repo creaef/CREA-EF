@@ -376,7 +376,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
     setAdminError(null);
 
     const cleanEmail = adminEmail.trim().toLowerCase();
-    if (!cleanEmail || !adminPassword) {
+    const cleanPassword = adminPassword.trim();
+    if (!cleanEmail || !cleanPassword) {
       setAdminError('Introduce email y contraseña de administrador.');
       return;
     }
@@ -385,7 +386,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       const res = await fetch('/api/auth/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password: adminPassword }),
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
       });
 
       const contentType = res.headers.get('content-type') || '';
@@ -410,11 +411,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
     // Validación cliente para Firebase Hosting estático
     const isAdminAccount =
       (cleanEmail === 'admin@crea-ef.es' || cleanEmail === 'creaef@gmail.com') &&
-      (adminPassword === 'admin123' || adminPassword === '3333');
+      (cleanPassword === 'admin123' || cleanPassword === '3333' || cleanPassword === 'admin');
 
     const isTesterAccount =
       (cleanEmail === 'tester@crea-ef.es' || /^tester[1-9][0-9]?@crea-ef\.es$/.test(cleanEmail)) &&
-      adminPassword === 'tester123';
+      (cleanPassword === 'tester123' || cleanPassword === 'tester');
 
     if (isAdminAccount || isTesterAccount) {
       onStartSession({
