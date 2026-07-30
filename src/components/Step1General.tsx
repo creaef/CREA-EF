@@ -13,11 +13,13 @@ import {
   Tag,
   Lightbulb,
   ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 import { Curso, Trimestre, TematicaEF, Ciclo } from '../types';
 import { getCicloFromCurso } from '../utils/sdaGenerator';
 import { LISTA_UNIFICADA_TEMATICAS } from '../data/proposedThemes';
 import { generateJustificationApi } from '../utils/aiClient';
+import { auth, loginWithGoogleDrive } from '../lib/firebase';
 import { GoogleDriveSelectorModal } from './GoogleDriveSelectorModal';
 
 interface Step1Props {
@@ -65,6 +67,53 @@ export const Step1General: React.FC<Step1Props> = ({
   const [loadingAi, setLoadingAi] = useState(false);
   const [errorAi, setErrorAi] = useState<string | null>(null);
   const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
+
+  const [googleUserEmail, setGoogleUserEmail] = useState<string>(() => {
+    try {
+      return (
+        auth.currentUser?.email ||
+        localStorage.getItem('google_user_email') ||
+        ''
+      );
+    } catch (e) {
+      return '';
+    }
+  });
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged((u) => {
+      if (u?.email) {
+        setGoogleUserEmail(u.email);
+        try {
+          localStorage.setItem('google_user_email', u.email);
+        } catch (e) {}
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const handleConnectGoogle = async () => {
+    setConnectingGoogle(true);
+    setErrorAi(null);
+    try {
+      const result = await loginWithGoogleDrive();
+      if (result?.user?.email || result?.token) {
+        const email = result.user?.email || 'Cuenta de Google Conectada';
+        setGoogleUserEmail(email);
+        try {
+          localStorage.setItem('google_user_email', email);
+          if (result.token) {
+            localStorage.setItem('sda_drive_access_token', result.token);
+          }
+        } catch (e) {}
+      }
+    } catch (err: any) {
+      console.warn('Conexión con Google:', err);
+    } finally {
+      setConnectingGoogle(false);
+    }
+  };
 
   // Parse current tematica into an array of selected theme ideas
   const [selectedThemes, setSelectedThemes] = useState<string[]>(() => {
@@ -269,14 +318,34 @@ export const Step1General: React.FC<Step1Props> = ({
             </div>
 
             <div className="shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsDriveModalOpen(true)}
-                className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs transition shadow-md cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4 text-slate-950" />
-                <span>Conectar Cuenta de Google</span>
-              </button>
+              {googleUserEmail ? (
+                <div className="flex items-center space-x-2 bg-emerald-950/90 border border-emerald-500/80 px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-300 shadow-md">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div>
+                    <p className="font-extrabold text-emerald-200">✓ Conectado: {googleUserEmail}</p>
+                    <p className="text-[10px] text-emerald-400 font-medium">IA Gemini Dedicada Activada</p>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConnectGoogle}
+                  disabled={connectingGoogle}
+                  className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs transition shadow-md cursor-pointer disabled:opacity-60"
+                >
+                  {connectingGoogle ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                      <span>Conectando con Google...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4 text-slate-950" />
+                      <span>Conectar Cuenta de Google (IA Dedicada)</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
