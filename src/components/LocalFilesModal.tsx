@@ -11,6 +11,7 @@ import {
   FileType,
   FileSpreadsheet,
 } from 'lucide-react';
+import { parseLocalFileClient } from '../utils/localFileParser';
 
 interface LocalFilesModalProps {
   isOpen: boolean;
@@ -46,37 +47,54 @@ export const LocalFilesModal: React.FC<LocalFilesModalProps> = ({
       try {
         setStatusMsg(`Leyendo y procesando "${file.name}"...`);
 
-        // Convert File to base64
-        const base64Data = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            const base64 = result.split(',')[1] || result;
-            resolve(base64);
-          };
-          reader.onerror = (err) => reject(err);
-          reader.readAsDataURL(file);
-        });
+        let extractedText = '';
+        let charCount = 0;
 
-        const res = await fetch('/api/parse-local-file', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: file.name,
-            base64Data,
-          }),
-        });
+        // Try backend parse if available
+        try {
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const result = reader.result as string;
+              const base64 = result.split(',')[1] || result;
+              resolve(base64);
+            };
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+          });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || `Error al procesar ${file.name}`);
+          const res = await fetch('/api/parse-local-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName: file.name, base64Data }),
+          });
 
-        if (data.extractedText) {
-          onAddLocalDocumentation(data.extractedText, file.name);
-          totalChars += data.charCount || data.extractedText.length;
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            const data = await res.json();
+            if (data.extractedText) {
+              extractedText = data.extractedText;
+              charCount = data.charCount || extractedText.length;
+            }
+          }
+        } catch (e) {
+          // Direct client fallback
+        }
+
+        // Direct Client Fallback (Firebase Hosting / offline)
+        if (!extractedText) {
+          const parsed = await parseLocalFileClient(file);
+          extractedText = parsed.text;
+          charCount = parsed.charCount;
+        }
+
+        if (extractedText) {
+          onAddLocalDocumentation(extractedText, file.name);
+          totalChars += charCount;
           newAddedFiles.push({
             name: file.name,
             size: file.size,
-            charCount: data.charCount || data.extractedText.length,
+            charCount,
           });
         }
       } catch (err: any) {

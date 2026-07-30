@@ -50,14 +50,7 @@ const INITIAL_SDA_STATE: SituacionAprendizaje = {
 };
 
 export default function App() {
-  const [userSession, setUserSession] = useState<UserSession | null>(() => {
-    try {
-      const stored = localStorage.getItem('sda_active_user_session');
-      return stored ? JSON.parse(stored) : null;
-    } catch (e) {
-      return null;
-    }
-  });
+  const [userSession, setUserSession] = useState<UserSession | null>(null);
 
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [maxStepReached, setMaxStepReached] = useState<number>(1);
