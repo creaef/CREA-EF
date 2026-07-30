@@ -13,10 +13,8 @@ import {
   Mail,
   UserPlus,
   LogIn,
-  Palette,
 } from 'lucide-react';
 import { CreaEfLogo } from './CreaEfLogo';
-import { ThemeSelectorModal } from './ThemeSelectorModal';
 import { useColorTheme } from '../utils/theme';
 
 export interface UserSession {
@@ -390,11 +388,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       setAdminError('Error al validar credenciales de administración.');
     }
   };
-
+  const [adminError, setAdminError] = useState('');
 
   const codeGsContent = '';
 
-  const [showThemeModal, setShowThemeModal] = useState(false);
   const { theme } = useColorTheme();
 
   return (
@@ -421,16 +418,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
               </p>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setShowThemeModal(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/40 text-xs font-bold transition shadow-xs"
-            title="Cambiar paleta de colores corporativos"
-          >
-            <Palette className="w-4 h-4 text-orange-400" />
-            <span>Paleta de Colores</span>
-          </button>
         </div>
       </header>
 
@@ -934,9 +921,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       <footer className="border-t border-slate-800 py-4 bg-slate-950 text-center text-xs text-slate-500">
         Plataforma de Situaciones de Aprendizaje de EF Andalucía • Adaptado a LOMLOE & Instrucción 12/2022
       </footer>
-
-      {/* Theme Selector Modal */}
-      <ThemeSelectorModal isOpen={showThemeModal} onClose={() => setShowThemeModal(false)} />
     </div>
   );
 };
