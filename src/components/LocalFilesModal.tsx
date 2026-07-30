@@ -47,46 +47,10 @@ export const LocalFilesModal: React.FC<LocalFilesModalProps> = ({
       try {
         setStatusMsg(`Leyendo y procesando "${file.name}"...`);
 
-        let extractedText = '';
-        let charCount = 0;
-
-        // Try backend parse if available
-        try {
-          const base64Data = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const result = reader.result as string;
-              const base64 = result.split(',')[1] || result;
-              resolve(base64);
-            };
-            reader.onerror = (err) => reject(err);
-            reader.readAsDataURL(file);
-          });
-
-          const res = await fetch('/api/parse-local-file', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileName: file.name, base64Data }),
-          });
-
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            const data = await res.json();
-            if (data.extractedText) {
-              extractedText = data.extractedText;
-              charCount = data.charCount || extractedText.length;
-            }
-          }
-        } catch (e) {
-          // Direct client fallback
-        }
-
-        // Direct Client Fallback (Firebase Hosting / offline)
-        if (!extractedText) {
-          const parsed = await parseLocalFileClient(file);
-          extractedText = parsed.text;
-          charCount = parsed.charCount;
-        }
+        // Directly parse local file using client-side JavaScript (supports Word, PDF, Excel, Text)
+        const parsed = await parseLocalFileClient(file);
+        const extractedText = parsed.text;
+        const charCount = parsed.charCount;
 
         if (extractedText) {
           onAddLocalDocumentation(extractedText, file.name);

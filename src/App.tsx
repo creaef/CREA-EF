@@ -332,6 +332,7 @@ export default function App() {
             tematica={sda.tematica}
             metodologiaActiva={sda.metodologiaActiva}
             productoFinal={sda.productoFinal}
+            sesiones={sda.sesiones}
             setProductoFinal={(v) => updateSda({ productoFinal: v })}
             onPrev={handlePrev}
             onNext={handleNext}

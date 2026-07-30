@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Sparkles, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
-import { Curso, TematicaEF } from '../types';
+import { Curso, TematicaEF, SesionTrabajo } from '../types';
 import { generateFinalChallengeApi } from '../utils/aiClient';
 
 interface Step6Props {
@@ -9,6 +9,7 @@ interface Step6Props {
   tematica: TematicaEF;
   metodologiaActiva: string;
   productoFinal: string;
+  sesiones?: SesionTrabajo[];
   setProductoFinal: (v: string) => void;
   onPrev: () => void;
   onNext: () => void;
@@ -20,6 +21,7 @@ export const Step6FinalChallenge: React.FC<Step6Props> = ({
   tematica,
   metodologiaActiva,
   productoFinal,
+  sesiones = [],
   setProductoFinal,
   onPrev,
   onNext,
@@ -41,9 +43,15 @@ export const Step6FinalChallenge: React.FC<Step6Props> = ({
     setLoadingAi(true);
 
     try {
+      const sesionesText = sesiones
+        .map((s, idx) => `Sesión ${idx + 1}: ${s.titulo} - ${s.fases?.map((f) => f.nombreJuego).join(', ')}`)
+        .join('\n');
+
       const reto = await generateFinalChallengeApi({
         tematica,
         curso,
+        metodologia: metodologiaActiva,
+        sesionesText,
       });
 
       if (reto) {

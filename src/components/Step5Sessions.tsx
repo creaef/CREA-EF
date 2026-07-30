@@ -240,9 +240,11 @@ export const Step5Sessions: React.FC<Step5Props> = ({
       const sesionesGeneradas = await generateSessionsApi({
         numSesiones,
         ciclo,
+        curso,
         tematica,
         modeloEstructura,
         criteriosCodigos: criteriosSeleccionados,
+        driveDocumentationText: docText || driveDocumentationText,
       });
 
       if (sesionesGeneradas && Array.isArray(sesionesGeneradas)) {
