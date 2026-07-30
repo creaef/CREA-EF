@@ -1,0 +1,122 @@
+export const LISTA_UNIFICADA_TEMATICAS: string[] = [
+  // Habilidades motrices básicas (separadas)
+  'Desplazamientos',
+  'Saltos',
+  'Giros',
+  'Lanzamientos',
+  'Recepciones',
+
+  // Coordinación (separadas)
+  'Coordinación General',
+  'Coordinación Óculo-manual',
+  'Coordinación Óculo-pédica',
+
+  // Capacidades y esquema corporal
+  'Capacidades Físicas Básicas (Todas juntas: Fuerza, Resistencia, Velocidad y Flexibilidad)',
+  'Fuerza (Trabajo de autocargas y retos de fuerza en EF)',
+  'Resistencia (Resistencia aeróbica y juegos de larga duración)',
+  'Velocidad (Velocidad de reacción, desplazamiento y gestual)',
+  'Flexibilidad (Movilidad articular y estiramientos jugados)',
+  'Equilibrio',
+  'Circuitos motrices',
+  'Respiración y relajación',
+  'Esquema corporal y conciencia corporal',
+  'Lateralidad y direccionalidad',
+  'Percepción espacial y temporal',
+  'Higiene postural básica (cómo sentarse, coger peso, mochilas)',
+  'Desarrollo sensoriomotor (juegos con los sentidos)',
+
+  // Salud, valores y conceptos
+  'Bienvenidos/as al área de EF / Conociendo a mi clase / Decálogo de EF',
+  'Salud y actividad física / Hábitos saludables / Alimentación y EF',
+  'Primeros Auxilios',
+  'Salud mental y empatía',
+  'Reciclaje y EF',
+  'Educación vial',
+  'Aseo personal y rutinas de higiene tras el ejercicio',
+  'Prevención de lesiones en el deporte escolar',
+
+  // Deportes individuales y colectivos (separados)
+  'Atletismo',
+  'Balonmano',
+  'Baloncesto',
+  'Voleibol',
+  'Béisbol',
+  'Fútbol-sala',
+  'Judo',
+  'Natación',
+  'Deportes de raqueta',
+  'Deportes sobre ruedas (Monopatín y patines)',
+
+  // Juegos alternativos y deportes alternativos (separados)
+  'Dachtball',
+  'Colpbol',
+  'Rosquilla',
+  'Tchoukball',
+  'Ringol',
+  'Paladós',
+  'Kin Ball',
+  'Frisbee',
+  'Floorball',
+  'Indiacas',
+
+  // Juegos diversos
+  'Juegos de persecución',
+  'Juegos inventados',
+  'Juegos de pistas',
+  'Juegos populares y tradicionales andaluces',
+  'Juegos del mundo',
+  'Juegos con nuestros mayores',
+  'Juegos de patio',
+  'Juegos de mesa',
+  'Juegos con cuerdas y gomas',
+  'Chapas',
+  'Petanca',
+  'Juegos predeportivos generales (iniciación a la táctica sin especialización)',
+  'Juegos con paracaídas',
+  'Juegos de malabares y circo (diábolos, pelotas, aros)',
+  'Juegos de calentamiento y rompehielos',
+  'Juegos de vuelta a la calma (actividades de baja intensidad)',
+  'Juegos acuáticos recreativos',
+  'Juegos cooperativos / Retos cooperativos',
+
+  // Inclusión y valores
+  'Deporte adaptado e inclusivo / Discapacidad y concienciación',
+  'Goalball',
+  'Olimpiadas y Paraolimpiadas',
+  'Carrera solidaria / Juegos y deportes en familia',
+  'Juegos de roles (para trabajar el respeto y la empatía)',
+  'Retos motores individuales y superación personal',
+  'Juegos sin ganadores ni perdedores',
+
+  // Expresión y danza
+  'Expresión corporal / Percusión corporal / Mimo y sombras',
+  'Danza flamenca y folclore andaluz / Juegos de patio flamenco-rítmicos / Flamenco y expresión corporal',
+  'Danza jazz y coreografía / Danza coreográfica',
+  'Acrosport, Aeróbic, Pilates y Yoga (Todas juntas)',
+  'Acrosport (Figuras y pirámides humanas colectivas)',
+  'Pilates (Control corporal, core y respiración)',
+  'Yoga (Posturas, flexibilidad y relajación consciente)',
+  'Aeróbic (Ritmo, coordinación y coreografías aeróbicas)',
+  'Dramatización y cuentos motores',
+  'Ritmo y musicalidad con implementos (ej. picas, aros)',
+  'Teatro de sombras y figuras corporales',
+  'Expresión de emociones a través del movimiento',
+
+  // Medio natural
+  'Actividades en entorno natural andaluz / Turismo activo en Andalucía / Parque Natural cercano',
+  'Orientación',
+  'Trail y carreras por montaña',
+  'Escalada',
+  'Slackline',
+  'Parkour adaptado',
+  'Cabuyería básica (nudos para educación física y aire libre)',
+  'Rastreo y señales en la naturaleza',
+
+  // Proyectos y metodologías activas
+  'Organización de eventos deportivos',
+  'Autoconstrucción de materiales',
+  'Circuito por estaciones',
+  'Robótica y EF',
+  'Gamificación en EF',
+];

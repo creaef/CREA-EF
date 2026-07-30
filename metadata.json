@@ -1,0 +1,6 @@
+{
+  "name": "Crea-Ef",
+  "description": "Diseña y personaliza sus situaciones de aprendizaje de Ef. Herramienta docente automatizada según la normativa LOMLOE de Andalucía (Decreto 101/2023).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
