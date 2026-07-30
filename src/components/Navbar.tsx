@@ -4,6 +4,7 @@ import { SituacionAprendizaje } from '../types';
 import { HowItWorksModal } from './HowItWorksModal';
 import { SavedSdasModal } from './SavedSdasModal';
 import { TesterManagerModal } from './TesterManagerModal';
+import { GeminiKeyModal } from './GeminiKeyModal';
 import { UserSession } from './LandingPage';
 import { CreaEfLogo } from './CreaEfLogo';
 import { useColorTheme } from '../utils/theme';
@@ -22,6 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentStep, onNewSdA, savedSdas
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showTesterModal, setShowTesterModal] = useState(false);
+  const [showGeminiKeyModal, setShowGeminiKeyModal] = useState(false);
   const { theme } = useColorTheme();
 
   const handleOpenHowItWorks = () => {
@@ -92,6 +94,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentStep, onNewSdA, savedSdas
             </button>
           )}
 
+          {/* Clave IA Gemini Button */}
+          <button
+            id="btn-gemini-key-modal"
+            onClick={() => setShowGeminiKeyModal(true)}
+            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-purple-900/80 hover:bg-purple-800 text-purple-200 text-xs sm:text-sm font-extrabold transition border border-purple-500/50 shadow-xs cursor-pointer"
+            title="Configurar Clave de IA Google Gemini"
+          >
+            <KeyRound className="w-4 h-4 text-purple-300" />
+            <span className="hidden sm:inline">Clave IA</span>
+          </button>
+
           {/* Cómo funciona Button */}
           <button
             id="btn-how-it-works"
@@ -156,6 +169,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentStep, onNewSdA, savedSdas
       <TesterManagerModal
         isOpen={showTesterModal}
         onClose={() => setShowTesterModal(false)}
+      />
+
+      {/* Gemini Key Modal */}
+      <GeminiKeyModal
+        isOpen={showGeminiKeyModal}
+        onClose={() => setShowGeminiKeyModal(false)}
       />
     </header>
   );
