@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Sparkles, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Curso, TematicaEF } from '../types';
+import { generateFinalChallengeApi } from '../utils/aiClient';
 
 interface Step6Props {
   tituloSdA: string;
@@ -40,23 +41,13 @@ export const Step6FinalChallenge: React.FC<Step6Props> = ({
     setLoadingAi(true);
 
     try {
-      const res = await fetch('/api/ai/generate-final-challenge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          titulo: tituloSdA,
-          curso,
-          tematica,
-          metodologia: metodologiaActiva,
-        }),
+      const reto = await generateFinalChallengeApi({
+        tematica,
+        curso,
       });
 
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      if (data.descripcionReto) {
-        const titleText = data.tituloReto ? `Reto Final "${data.tituloReto}": ` : '';
-        setProductoFinal(`${titleText}${data.descripcionReto}`);
+      if (reto) {
+        setProductoFinal(reto);
       }
     } catch (err: any) {
       console.error(err);

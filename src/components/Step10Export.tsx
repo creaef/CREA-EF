@@ -694,15 +694,17 @@ export const Step10Export: React.FC<Step10Props> = ({ sda, onSaveSdA, onPrev }) 
         body: JSON.stringify({ accessToken: token, sda }),
       });
 
-      const data = await res.json();
-      if (res.ok && (data.docUrl || data.documentUrl)) {
-        const targetUrl = data.docUrl || data.documentUrl;
-        setDocUrl(targetUrl);
-        window.open(targetUrl, '_blank');
-      } else {
-        setErrorDoc(data.error || 'No se pudo crear el documento directamente en Google Drive. Se iniciará la descarga en Word.');
-        handleDownloadWord();
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.docUrl || data.documentUrl) {
+          const targetUrl = data.docUrl || data.documentUrl;
+          setDocUrl(targetUrl);
+          window.open(targetUrl, '_blank');
+          return;
+        }
       }
+      handleDownloadWord();
     } catch (err: any) {
       console.error('Error creating Google Doc:', err);
       setErrorDoc(err.message || 'Error al conectar con la API de Google Docs. Descargando en formato Word.');

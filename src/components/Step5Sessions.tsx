@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { generateSessionsApi, enrichFullSessionApi } from '../utils/aiClient';
 import {
   Calendar,
   Clock,
@@ -115,21 +116,16 @@ export const Step5Sessions: React.FC<Step5Props> = ({
     setEnrichingSession(true);
     setErrorDrive(null);
     try {
-      const res = await fetch('/api/ai/enrich-full-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sesion: targetSession,
-          tematica,
-          curso,
-        }),
+      const sesionActualizada = await enrichFullSessionApi({
+        sesion: targetSession,
+        ciclo,
+        tematica,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al enriquecer la sesión.');
-      if (data.sesionActualizada && Array.isArray(data.sesionActualizada.fases)) {
-        copy[activeSessionIndex].fases = data.sesionActualizada.fases;
-        if (data.sesionActualizada.titulo) {
-          copy[activeSessionIndex].titulo = data.sesionActualizada.titulo;
+
+      if (sesionActualizada && Array.isArray(sesionActualizada.fases)) {
+        copy[activeSessionIndex].fases = sesionActualizada.fases;
+        if (sesionActualizada.titulo) {
+          copy[activeSessionIndex].titulo = sesionActualizada.titulo;
         }
         setSesiones(copy);
         setSuccessDrive(`✓ Sesión ${activeSessionIndex + 1} completada y enriquecida con éxito por la IA.`);
@@ -241,38 +237,25 @@ export const Step5Sessions: React.FC<Step5Props> = ({
     setLoadingAi(true);
     setErrorDrive(null);
     try {
-      const res = await fetch('/api/ai/generate-sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          numSesiones,
-          curso,
-          ciclo,
-          tematica,
-          modeloEstructura,
-          criteriosSeleccionados,
-          driveDocumentationText: docText,
-        }),
+      const sesionesGeneradas = await generateSessionsApi({
+        numSesiones,
+        ciclo,
+        tematica,
+        modeloEstructura,
+        criteriosCodigos: criteriosSeleccionados,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al generar las sesiones con IA.');
-
-      if (data.sesiones && Array.isArray(data.sesiones)) {
-        const formattedSesiones = data.sesiones.map((ses: SesionTrabajo) => ({
+      if (sesionesGeneradas && Array.isArray(sesionesGeneradas)) {
+        const formattedSesiones = sesionesGeneradas.map((ses: SesionTrabajo) => ({
           ...ses,
-          fases: ses.fases ? ses.fases.map((f: ActividadEnSesion) => ({
-            ...f,
-            descripcion: formatGameDescription(f.descripcion),
-          })) : [],
+          fases: ses.fases
+            ? ses.fases.map((f: ActividadEnSesion) => ({
+                ...f,
+                descripcion: formatGameDescription(f.descripcion),
+              }))
+            : [],
         }));
         setSesiones(formattedSesiones);
-        if (typeof data.porcentajeDrive === 'number') updatePDrive(data.porcentajeDrive);
-        if (typeof data.porcentajeBancoJuegos === 'number') updatePBanco(data.porcentajeBancoJuegos);
-        if (typeof data.porcentajeIA === 'number') updatePIA(data.porcentajeIA);
-        if (Array.isArray(data.fuentesUtilizadas)) {
-          setFuentesUtilizadas(data.fuentesUtilizadas);
-        }
         setActiveSessionIndex(0);
       }
     } catch (e: any) {

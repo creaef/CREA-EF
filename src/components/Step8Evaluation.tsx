@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { generateEvaluationToolsApi, generateRubricApi, generateInitialEvalApi } from '../utils/aiClient';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 import {
@@ -79,27 +80,18 @@ export const Step8Evaluation: React.FC<Step8Props> = ({
     setLoadingAi(true);
 
     try {
-      // 1. Generate Evaluation Tools based on tematica and criterios
-      const resTools = await fetch('/api/ai/generate-evaluation-tools', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selectedInstrumentTypes: selectedTools,
-          tematica,
-          criteriosSeleccionados,
-          curso,
-        }),
+      // 1. Generate Evaluation Tools
+      const herramientas = await generateEvaluationToolsApi({
+        tematica,
+        ciclo: curso,
       });
 
-      const dataTools = await resTools.json();
-      if (!resTools.ok) throw new Error(dataTools.error || 'Error al generar los instrumentos de evaluación.');
-
-      if (dataTools.instrumentos && Array.isArray(dataTools.instrumentos)) {
-        setInstrumentosEvaluacion(dataTools.instrumentos);
+      if (herramientas && Array.isArray(herramientas)) {
+        setInstrumentosEvaluacion(herramientas);
       }
 
       // 2. Generate Rubric if requested
-      if (selectedTools.includes('Rúbrica de Evaluación Criterial (4 Niveles)') && criteriosSeleccionados.length > 0) {
+      if (criteriosSeleccionados.length > 0) {
         const payloadCriterios = criteriosSeleccionados.map((cod) => {
           const obj = CRITERIOS_EVALUACION_EF.find((c) => c.codigo === cod || c.id === cod);
           return {
@@ -108,15 +100,9 @@ export const Step8Evaluation: React.FC<Step8Props> = ({
           };
         });
 
-        const resRubric = await fetch('/api/ai/generate-rubric', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ criterios: payloadCriterios }),
-        });
-
-        const dataRubric = await resRubric.json();
-        if (dataRubric.rubrica && Array.isArray(dataRubric.rubrica)) {
-          setRubrica(dataRubric.rubrica);
+        const rubricaData = await generateRubricApi(payloadCriterios);
+        if (rubricaData && Array.isArray(rubricaData)) {
+          setRubrica(rubricaData);
         }
       }
     } catch (err: any) {
@@ -235,19 +221,18 @@ export const Step8Evaluation: React.FC<Step8Props> = ({
     setLoadingInitialAi(true);
     setErrorAi(null);
     try {
-      const res = await fetch('/api/ai/generate-initial-eval', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tematica,
-          curso,
-          criteriosSeleccionados,
-        }),
+      const evalData = await generateInitialEvalApi({
+        tematica,
+        curso,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al generar la evaluación inicial.');
-      if (data.evaluacionInicial) {
-        setEvaluacionInicial(data.evaluacionInicial);
+
+      if (evalData) {
+        if (typeof evalData === 'string') {
+          setEvaluacionInicial(evalData);
+        } else if (evalData.actividadInicial) {
+          const formattedText = `**Actividad Diagnóstica:** ${evalData.actividadInicial}\n\n**Indicadores de Observación:**\n${(evalData.indicadoresObservacion || []).map((i: string) => `- ${i}`).join('\n')}\n\n**Instrumento Recomendado:** ${evalData.instrumento || 'Escala cualitativa'}`;
+          setEvaluacionInicial(formattedText);
+        }
       }
     } catch (e: any) {
       console.error(e);

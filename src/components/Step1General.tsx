@@ -16,6 +16,7 @@ import {
 import { Curso, Trimestre, TematicaEF, Ciclo } from '../types';
 import { getCicloFromCurso } from '../utils/sdaGenerator';
 import { LISTA_UNIFICADA_TEMATICAS } from '../data/proposedThemes';
+import { generateJustificationApi } from '../utils/aiClient';
 
 interface Step1Props {
   titulo: string;
@@ -129,27 +130,19 @@ export const Step1General: React.FC<Step1Props> = ({
     setLoadingAi(true);
 
     try {
-      const res = await fetch('/api/ai/generate-justification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          titulo,
-          curso,
-          ciclo: cicloCalculado,
-          tematica,
-        }),
+      const justificacionText = await generateJustificationApi({
+        titulo,
+        curso,
+        ciclo: cicloCalculado,
+        tematica,
       });
 
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      if (data.justificacion) {
-        setJustificacion(data.justificacion);
+      if (justificacionText) {
+        setJustificacion(justificacionText);
       }
     } catch (err: any) {
       console.error(err);
-      setErrorAi(err.message || 'Error al conectar con la IA de Gemini.');
+      setErrorAi(err.message || 'Error al generar la justificación con IA.');
     } finally {
       setLoadingAi(false);
     }

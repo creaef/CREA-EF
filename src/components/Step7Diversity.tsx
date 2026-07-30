@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { generateDiversityApi } from '../utils/aiClient';
 import {
   Users,
   Sparkles,
@@ -72,23 +73,29 @@ export const Step7Diversity: React.FC<Step7Props> = ({
     setLoadingAi(true);
     setErrorMsg(null);
     try {
-      const res = await fetch('/api/ai/generate-diversity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          neaeSeleccionadas: selectedCases,
-          sdaContext,
-        }),
+      const data = await generateDiversityApi({
+        tematica: sdaContext?.tematica || 'Educación Física',
+        ciclo: sdaContext?.ciclo || 'Primer Ciclo',
+        necesidades: selectedCases.join(', '),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al generar la atención a la diversidad.');
-
-      if (data.adaptacionesNEAE) {
-        setAdaptacionesNEAE(data.adaptacionesNEAE);
-      }
-      if (data.pautasDUA) {
-        setPautasDUA(data.pautasDUA);
+      if (data) {
+        if (data.medidasNeae) {
+          const adaptacionesFormatted = data.medidasNeae.map((medida: string, idx: number) => ({
+            id: `neae-${idx + 1}`,
+            casuistica: selectedCases[idx] || 'General',
+            medida,
+          }));
+          setAdaptacionesNEAE(adaptacionesFormatted);
+        }
+        if (data.pautasDua) {
+          const pautasFormatted = data.pautasDua.map((pauta: string, idx: number) => ({
+            id: `dua-${idx + 1}`,
+            principio: 'Principio DUA',
+            pauta,
+          }));
+          setPautasDUA(pautasFormatted);
+        }
       }
     } catch (e: any) {
       console.error(e);

@@ -69,7 +69,13 @@ export default function App() {
     const email = userSession?.email?.trim().toLowerCase();
     if (email) {
       fetch(`/api/sdas?email=${encodeURIComponent(email)}`)
-        .then((res) => res.json())
+        .then((res) => {
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            return res.json();
+          }
+          throw new Error('Servidor dinámico no disponible');
+        })
         .then((data) => {
           if (data && Array.isArray(data.sdas)) {
             setSavedSdas(data.sdas);
