@@ -15,7 +15,7 @@ import { formatGameDescription } from './src/types';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Lazy initializer for Stripe Client
 function getStripeClient(): Stripe | null {
