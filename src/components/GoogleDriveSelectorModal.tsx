@@ -72,6 +72,7 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [selectedFileNames, setSelectedFileNames] = useState<Record<string, string>>({});
   const [loadingRead, setLoadingRead] = useState<boolean>(false);
+  const [readProgressMsg, setReadProgressMsg] = useState<string>('Leyendo selección de Drive...');
 
   // Manual Token Fallback State
   const [showManualToken, setShowManualToken] = useState<boolean>(false);
@@ -277,44 +278,17 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
     }
 
     setLoadingRead(true);
+    setReadProgressMsg('Iniciando lectura de recursos en Google Drive...');
     setErrorMsg(null);
-    try {
-      const res = await fetch('/api/drive/read-selected', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken,
-          folderIds: targetFolderIds,
-          fileIds: targetFileIds,
-        }),
-      });
-
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const data = await res.json();
-        const primaryName =
-          targetFolderIds.length > 0
-            ? `${targetFolderIds.length} Carpeta(s) de Drive`
-            : `${targetFileIds.length} Documento(s) de Drive`;
-
-        onSelectFolderAndContent({
-          folderId: targetFolderIds[0] || 'multi-selection',
-          folderName: primaryName,
-          documentationText: data.documentationText || '',
-          fileCount: data.fileCount || 0,
-          sourceFiles: data.sourceFiles || [],
-        });
-
-        onClose();
-        return;
-      }
-    } catch (err) {
-      // Direct client fallback
-    }
 
     // Direct Google Drive REST API Client Fallback
     try {
-      const data = await readDriveFilesClient(accessToken, targetFolderIds, targetFileIds);
+      const data = await readDriveFilesClient(
+        accessToken,
+        targetFolderIds,
+        targetFileIds,
+        (msg) => setReadProgressMsg(msg)
+      );
       const primaryName =
         targetFolderIds.length > 0
           ? `${targetFolderIds.length} Carpeta(s) de Drive`
@@ -696,8 +670,8 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
             >
               {loadingRead ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
-                  <span>Leyendo Selección de Drive...</span>
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-950 shrink-0" />
+                  <span className="animate-pulse">{readProgressMsg || 'Leyendo Selección de Drive...'}</span>
                 </>
               ) : (
                 <>

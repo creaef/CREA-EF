@@ -12,11 +12,13 @@ import {
   Check,
   Tag,
   Lightbulb,
+  ShieldCheck,
 } from 'lucide-react';
 import { Curso, Trimestre, TematicaEF, Ciclo } from '../types';
 import { getCicloFromCurso } from '../utils/sdaGenerator';
 import { LISTA_UNIFICADA_TEMATICAS } from '../data/proposedThemes';
 import { generateJustificationApi } from '../utils/aiClient';
+import { GoogleDriveSelectorModal } from './GoogleDriveSelectorModal';
 
 interface Step1Props {
   titulo: string;
@@ -62,6 +64,7 @@ export const Step1General: React.FC<Step1Props> = ({
 }) => {
   const [loadingAi, setLoadingAi] = useState(false);
   const [errorAi, setErrorAi] = useState<string | null>(null);
+  const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
 
   // Parse current tematica into an array of selected theme ideas
   const [selectedThemes, setSelectedThemes] = useState<string[]>(() => {
@@ -239,6 +242,41 @@ export const Step1General: React.FC<Step1Props> = ({
                 className="w-28 px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 text-slate-900 font-bold text-sm bg-slate-50"
               />
               <span className="text-xs text-slate-500">Recomendado: 6 a 10 sesiones por SdA.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Banner de Acceso y Personalización con Cuenta de Google */}
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-indigo-700/60 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start space-x-3 max-w-2xl">
+              <div className="p-2.5 bg-indigo-900/80 rounded-xl border border-indigo-700/50 shrink-0 mt-0.5">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <h4 className="font-extrabold text-sm sm:text-base text-white">
+                    Acceso y Personalización con Cuenta de Google (IA Dedicada)
+                  </h4>
+                  <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Recomendado
+                  </span>
+                </div>
+                <p className="text-xs text-indigo-200 leading-relaxed">
+                  Al conectar o iniciar sesión con tu cuenta de Google, la aplicación activa automáticamente tu cuota de IA dedicada (Google Gemini) para generar justificaciones, retos y sesiones con la máxima extensión y profundidad pedagógica. Además, te ofrecerá mayor personalización según tus recursos de aprendizaje.
+                </p>
+              </div>
+            </div>
+
+            <div className="shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsDriveModalOpen(true)}
+                className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs transition shadow-md cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-slate-950" />
+                <span>Conectar Cuenta de Google</span>
+              </button>
             </div>
           </div>
         </div>
@@ -484,6 +522,14 @@ export const Step1General: React.FC<Step1Props> = ({
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      <GoogleDriveSelectorModal
+        isOpen={isDriveModalOpen}
+        onClose={() => setIsDriveModalOpen(false)}
+        onSelectFolderAndContent={() => {
+          setIsDriveModalOpen(false);
+        }}
+      />
     </div>
   );
 };
