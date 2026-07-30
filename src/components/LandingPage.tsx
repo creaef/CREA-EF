@@ -388,7 +388,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       setAdminError('Error al validar credenciales de administración.');
     }
   };
-  const [adminError, setAdminError] = useState('');
 
   const codeGsContent = '';
 
