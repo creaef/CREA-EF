@@ -153,13 +153,13 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
       console.warn('Drive auth notification:', err?.code || err?.message);
       const rawMsg = err?.message || '';
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
-        setErrorMsg('Ventana de autenticación cerrada. Haz clic de nuevo en "Iniciar Sesión con Google Drive" cuando quieras conectar tu cuenta.');
+        setErrorMsg('Haz clic en el botón inferior para iniciar sesión con cualquier cuenta de Google. Si tu navegador bloqueó la ventana emergente, utiliza la opción "Abrir app en ventana nueva".');
       } else if (
         rawMsg.toLowerCase().includes('origin_mismatch') ||
         rawMsg.toLowerCase().includes('idpiframe_initialization_failed') ||
         err?.code === 'auth/unauthorized-domain'
       ) {
-        setErrorMsg('⚠️ Error 400: origin_mismatch - El dominio de la app no está registrado en la Consola de Google Cloud / Firebase. Agrega la URL actual a los "Orígenes de JavaScript autorizados" de tu Client ID de OAuth 2.0 en Google Cloud Console, o utiliza la pestaña "Token manual" a continuación.');
+        setErrorMsg('⚠️ El dominio de esta web requiere autorización en la Consola de Google Cloud para cuentas externas. Puedes usar la pestaña "Token manual" a continuación o subir tus documentos mediante el botón "Subir Archivos Locales (Word/PDF/Excel)".');
         setShowManualToken(true);
       } else if (
         rawMsg.toLowerCase().includes('failed to open popup window') ||
@@ -167,10 +167,10 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
         rawMsg.toLowerCase().includes('popup') ||
         err?.code === 'auth/popup-blocked'
       ) {
-        setErrorMsg('⚠️ El visor o el navegador bloqueó la ventana emergente de inicio de sesión de Google. Para solucionarlo: 1) Haz clic abajo en "Abrir app en ventana nueva" para completar el login sin restricciones del visor, o 2) Usa la opción "Token manual".');
+        setErrorMsg('⚠️ El navegador bloqueó la ventana emergente de inicio de sesión de Google. Haz clic en "Abrir app en ventana nueva" para ingresar sin bloqueos, o sube tus archivos mediante "Archivos Locales".');
         setShowManualToken(true);
       } else {
-        setErrorMsg(rawMsg || 'Error al iniciar sesión con Google Drive.');
+        setErrorMsg(rawMsg || 'Para conectar tu cuenta de Google, haz clic en "Iniciar Sesión con Google Drive" y acepta los permisos.');
       }
     } finally {
       setLoadingAuth(false);
