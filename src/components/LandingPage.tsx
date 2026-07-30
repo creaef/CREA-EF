@@ -135,28 +135,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
         body: JSON.stringify({ email: cleanEmail, deviceCount }),
       });
 
-      const data = await res.json();
-      if (!res.ok || data.blocked) {
-        setTrialError(
-          data.message ||
-            'Has alcanzado el límite máximo de 3 SdAs de prueba con esta cuenta. Te invitamos a suscribirte en la Vía 2.'
-        );
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.blocked) {
+          setTrialError(
+            data.message ||
+              'Has alcanzado el límite máximo de 3 SdAs de prueba con esta cuenta. Te invitamos a suscribirte en la Vía 2.'
+          );
+          return;
+        }
+
+        // Save device state
+        localStorage.setItem('trial_device_email', cleanEmail);
+        localStorage.setItem('trial_device_count', String(data.generacionesUsadas || deviceCount));
+
+        onStartSession({
+          type: 'trial',
+          email: cleanEmail,
+          generacionesUsadas: data.generacionesUsadas || deviceCount,
+          generacionesRestantes: data.generacionesRestantes || Math.max(0, 3 - deviceCount),
+        });
         return;
       }
-
-      // Save device state
-      localStorage.setItem('trial_device_email', cleanEmail);
-      localStorage.setItem('trial_device_count', String(data.generacionesUsadas || deviceCount));
-
-      onStartSession({
-        type: 'trial',
-        email: cleanEmail,
-        generacionesUsadas: data.generacionesUsadas || deviceCount,
-        generacionesRestantes: data.generacionesRestantes || Math.max(0, 3 - deviceCount),
-      });
     } catch (err) {
       // Fallback local execution if offline or direct
-      const updatedCount = deviceCount;
+    }
+
+    const updatedCount = deviceCount;
       if (updatedCount >= 3) {
         setTrialError(
           'Límite de prueba alcanzado en este dispositivo (3/3). Regístrate para continuar.'
@@ -170,7 +176,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
         generacionesUsadas: updatedCount,
         generacionesRestantes: 3 - updatedCount,
       });
-    }
   };
 
   // Handle User Login (Via 2)
