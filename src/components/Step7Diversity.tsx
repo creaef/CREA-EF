@@ -69,6 +69,12 @@ export const Step7Diversity: React.FC<Step7Props> = ({
     if (setNeaeSeleccionadas) setNeaeSeleccionadas(next);
   };
 
+  React.useEffect(() => {
+    if (adaptacionesNEAE.length === 0 || pautasDUA.length === 0) {
+      handleGenerateDiversityAI();
+    }
+  }, []);
+
   const handleGenerateDiversityAI = async () => {
     setLoadingAi(true);
     setErrorMsg(null);

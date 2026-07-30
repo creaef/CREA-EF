@@ -61,33 +61,52 @@ export function generarSesionesAuto(
 
     // Iteración estricta en el orden exacto definido por las fases del modelo metodológico elegido
     modeloInfo.fases.forEach((faseDef, idx) => {
-      let juegoSel: JuegoActividadDB;
-
       if (idx === 0) {
-        // Fase de Inicio / Calentamiento / Conexión / Ensamblaje
-        juegoSel = iniciales[(i - 1) % (iniciales.length || 1)] || actividadesDisponibles[0];
+        // Fase 1: Inicio / Calentamiento / Conexión (10 min)
+        const juegoIni = iniciales[(i - 1) % (iniciales.length || 1)] || actividadesDisponibles[0];
+        if (juegoIni?.materiales) juegoIni.materiales.forEach((m) => materialesSet.add(m));
+
+        fases.push({
+          fase: faseDef.nombre,
+          duracionMin: 10,
+          juegoId: juegoIni?.id,
+          nombreJuego: juegoIni?.nombre || `Calentamiento: ${tematica}`,
+          descripcion: formatGameDescription(juegoIni?.descripcion || 'Movilidad articular y juego de activación motriz.'),
+          materiales: juegoIni?.materiales || ['Conos'],
+          adaptacionDUA: juegoIni?.atencionDiversidad || 'Apoyos visuales y demostración práctica.',
+        });
       } else if (idx === modeloInfo.fases.length - 1) {
-        // Fase Final / Vuelta a la Calma / Transferencia / Debriefing
-        juegoSel = calmas[(i - 1) % (calmas.length || 1)] || actividadesDisponibles[actividadesDisponibles.length - 1];
+        // Fase Final: Vuelta a la Calma / Debriefing / Autoevaluación (10 min)
+        const juegoCalma = calmas[(i - 1) % (calmas.length || 1)] || actividadesDisponibles[actividadesDisponibles.length - 1];
+        if (juegoCalma?.materiales) juegoCalma.materiales.forEach((m) => materialesSet.add(m));
+
+        fases.push({
+          fase: faseDef.nombre,
+          duracionMin: 10,
+          juegoId: juegoCalma?.id,
+          nombreJuego: juegoCalma?.nombre || `Vuelta a la Calma y Reflexión`,
+          descripcion: formatGameDescription(juegoCalma?.descripcion || 'Juego de relajación, estiramientos y metacognición en diana.'),
+          materiales: juegoCalma?.materiales || [],
+          adaptacionDUA: 'Semáforo emocional y diana visual.',
+        });
       } else {
-        // Parte Principal / Exploración / Estaciones
-        const offset = idx - 1;
-        juegoSel = principales[(i - 1 + offset) % (principales.length || 1)] || actividadesDisponibles[(i + offset) % actividadesDisponibles.length] || actividadesDisponibles[0];
-      }
+        // Fase 2: PARTE PRINCIPAL / EXPLORACIÓN / ESTACIONES -> OBLIGATORIAMENTE 4 JUEGOS MOTRICES (10 min cada uno = 40 min total)
+        for (let subIdx = 1; subIdx <= 4; subIdx++) {
+          const gameOffset = (i - 1) * 4 + (subIdx - 1);
+          const juegoPrin = principales[gameOffset % (principales.length || 1)] || actividadesDisponibles[gameOffset % actividadesDisponibles.length] || actividadesDisponibles[0];
+          if (juegoPrin?.materiales) juegoPrin.materiales.forEach((m) => materialesSet.add(m));
 
-      if (juegoSel && juegoSel.materiales) {
-        juegoSel.materiales.forEach((m) => materialesSet.add(m));
+          fases.push({
+            fase: `${faseDef.nombre} (Tarea ${subIdx}/4)`,
+            duracionMin: 10,
+            juegoId: juegoPrin?.id,
+            nombreJuego: juegoPrin?.nombre || `Tarea ${subIdx}: Desafío Motor de ${tematica}`,
+            descripcion: formatGameDescription(juegoPrin?.descripcion || `Actividad central ${subIdx} enfocada en ${tematica}.`),
+            materiales: juegoPrin?.materiales || ['Material específico EF'],
+            adaptacionDUA: juegoPrin?.atencionDiversidad || 'Grupos heterogéneos y asignación de roles flexibles.',
+          });
+        }
       }
-
-      fases.push({
-        fase: faseDef.nombre,
-        duracionMin: faseDef.duracionDefecto || faseDef.duracionDefault || 15,
-        juegoId: juegoSel?.id,
-        nombreJuego: juegoSel?.nombre || `Tarea de ${faseDef.nombre}`,
-        descripcion: juegoSel?.descripcion || faseDef.descripcion,
-        materiales: juegoSel?.materiales || [],
-        adaptacionDUA: juegoSel?.atencionDiversidad || 'Garantizar participación en grupos inclusivos.',
-      });
     });
 
     // Ensure all phase descriptions are formatted into 4 regulatory sections

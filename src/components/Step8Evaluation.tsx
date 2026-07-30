@@ -75,6 +75,15 @@ export const Step8Evaluation: React.FC<Step8Props> = ({
     if (setInstrumentosSeleccionados) setInstrumentosSeleccionados(next);
   };
 
+  React.useEffect(() => {
+    if (rubrica.length === 0 || instrumentosEvaluacion.length === 0) {
+      handleGenerateEvaluationAI();
+    }
+    if (!evaluacionInicial || evaluacionInicial.trim().length === 0) {
+      handleGenerateInitialEvalAI();
+    }
+  }, []);
+
   const handleGenerateEvaluationAI = async () => {
     setErrorAi(null);
     setLoadingAi(true);
