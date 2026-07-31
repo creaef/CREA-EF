@@ -50,7 +50,20 @@ const INITIAL_SDA_STATE: SituacionAprendizaje = {
 };
 
 export default function App() {
-  const [userSession, setUserSession] = useState<UserSession | null>(null);
+  const [userSession, setUserSession] = useState<UserSession | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('reset') || params.has('test') || params.has('clean')) {
+        localStorage.removeItem('sda_active_user_session');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return null;
+      }
+      const stored = localStorage.getItem('sda_active_user_session');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [maxStepReached, setMaxStepReached] = useState<number>(1);
