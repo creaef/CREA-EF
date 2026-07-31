@@ -80,12 +80,15 @@ export async function fetchApiJson<T>(
     const contentType = res.headers.get('content-type') || '';
     if (res.ok && contentType.includes('application/json')) {
       const data = await res.json();
-      return data as T;
+      if (data && typeof data === 'object') {
+        return data as T;
+      }
     }
   } catch (err) {
     // Conmuta a la IA en cliente
   }
 
+  return await fallbackFn();
 }
 
 function getUserApiKey(): string | undefined {
@@ -137,7 +140,7 @@ A través de esta propuesta pedagógica, el aprendizaje cobra un sentido funcion
 Alineada con el Decreto 101/2023 de Andalucía y fundamentada en el marco DUA, esta propuesta garantiza la inclusión y la equidad ofreciendo múltiples vías de ejecución y expresión, donde cada estudiante encuentra su propio reto adaptado. Así, en la pista del gimnasio, se vivencian valores esenciales como la cooperación, la coeducación, la gestión emocional y el respeto a la diversidad.`,
       };
     }
-  ).then((res) => res.justificacion);
+  ).then((res) => (res && res.justificacion) || '');
 }
 
 // 2. Generar Rúbrica de Evaluación Formativa con IA Gemini Real
@@ -189,7 +192,7 @@ Devuelve una respuesta JSON estricta en el siguiente formato:
       }));
       return { rubrica: rubricaFallback };
     }
-  ).then((res) => res.rubrica);
+  ).then((res) => (res && res.rubrica) || []);
 }
 
 // 3. Generar Evaluación Inicial con IA Gemini Real
@@ -229,7 +232,7 @@ Proporciona en formato JSON:
         },
       };
     }
-  ).then((res) => res.evaluacionInicial);
+  ).then((res) => (res && res.evaluacionInicial) || {});
 }
 
 // 4. Generar Adaptaciones de Diversidad (DUA / NEAE) con IA Gemini Real
@@ -285,7 +288,7 @@ Devuelve en JSON:
         },
       };
     }
-  ).then((res) => res.adaptaciones);
+  ).then((res) => (res && res.adaptaciones) || {});
 }
 
 // 5. Generar Reto Final Apasionante con IA Gemini Real
@@ -327,7 +330,7 @@ Instrucciones pedagógicas:
         retoFinal: `Reto Final "Gran Festival Coeducativo de ${params.tematica}": Para cerrar nuestra SdA, el alumnado de ${params.curso} se organizará en equipos cooperativos para diseñar y presentar estaciones de reto motor. Cada grupo seleccionará roles activos (acróbatas, equilibristas, organizadores) adaptados a sus capacidades, asegurando que todos tengan un papel protagonista. La meta colectiva es realizar una exhibición inclusiva ante la comunidad educativa donde prime el Fair Play y el aprendizaje compartido.`,
       };
     }
-  ).then((res) => res.retoFinal);
+  ).then((res) => (res && res.retoFinal) || '');
 }
 
 // 6. Generar Sesiones de Trabajo con IA Gemini Real (4 juegos por Parte Principal)
@@ -463,7 +466,7 @@ Devuelve en JSON estricto:
       );
       return { sesiones: fallback };
     }
-  ).then((res) => res.sesiones);
+  ).then((res) => (res && res.sesiones) || []);
 }
 
 // 7. Enriquecer Sesión Completa con IA Gemini Real
@@ -495,7 +498,7 @@ Devuelve el objeto de la sesión enriquecido en formato JSON.`;
 
       return { sesion: params.sesion };
     }
-  ).then((res) => res.sesion);
+  ).then((res) => (res && res.sesion) || {});
 }
 
 // 8. Generar Herramientas de Evaluación con IA Gemini Real
@@ -533,5 +536,5 @@ Devuelve en JSON:
         ],
       };
     }
-  ).then((res) => res.herramientas);
+  ).then((res) => (res && res.herramientas) || []);
 }

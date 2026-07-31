@@ -174,5 +174,29 @@ export const loginWithGoogleDrive = async (): Promise<{ user: User | null; token
 };
 
 export const logoutGoogle = async () => {
-  await signOut(auth);
+  try {
+    const token =
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem('sda_drive_access_token') || localStorage.getItem('google_access_token')
+        : null;
+    if (token && (window as any).google?.accounts?.oauth2?.revoke) {
+      (window as any).google.accounts.oauth2.revoke(token, () => {});
+    }
+  } catch (e) {}
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('google_user_email');
+      localStorage.removeItem('sda_drive_access_token');
+      localStorage.removeItem('google_access_token');
+      localStorage.removeItem('sda_drive_folder_id');
+      localStorage.removeItem('sda_drive_folder_name');
+      localStorage.removeItem('sda_drive_doc_text');
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.clear();
+    }
+  } catch (e) {}
+
+  await signOut(auth).catch(() => {});
 };
