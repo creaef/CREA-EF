@@ -1,6 +1,16 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+const defaultFirebaseConfig = {
+  projectId: 'crea-ef-app',
+  appId: '1:139467539552:web:23889318c163655465af05',
+  apiKey: 'AIzaSyCmpiaWwjho2-Wp3FswrV4ktK5MIlrNgk0',
+  authDomain: 'crea-ef-app.firebaseapp.com',
+  storageBucket: 'crea-ef-app.firebasestorage.app',
+  messagingSenderId: '139467539552',
+  measurementId: 'G-VP2PQ25WDQ',
+  oAuthClientId: '139467539552-4mgi46drjg18j5p8q7qqtvvao2hfmmtn.apps.googleusercontent.com',
+};
 
 declare global {
   interface Window {
@@ -8,16 +18,16 @@ declare global {
   }
 }
 
-// Load configuration from env variables with fallback to firebase-applet-config.json
+// Load configuration from env variables with fallback to default config
 const effectiveConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId,
-  oAuthClientId: import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || firebaseConfig.oAuthClientId,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || defaultFirebaseConfig.projectId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultFirebaseConfig.appId,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || defaultFirebaseConfig.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultFirebaseConfig.authDomain,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || defaultFirebaseConfig.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultFirebaseConfig.messagingSenderId,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || defaultFirebaseConfig.measurementId,
+  oAuthClientId: import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || defaultFirebaseConfig.oAuthClientId,
 };
 
 // Initialize Firebase App instance
