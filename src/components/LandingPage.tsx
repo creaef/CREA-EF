@@ -64,10 +64,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       if (params.get('payment') === 'success') {
         const email = params.get('email');
         if (email) {
+          const cleanEmail = email.trim().toLowerCase();
+          fetch('/api/auth/user/confirm-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: cleanEmail }),
+          }).catch(() => {});
+
+          try {
+            const stored = localStorage.getItem(`registered_user_${cleanEmail}`);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              parsed.estadoPago = 'Pagado';
+              localStorage.setItem(`registered_user_${cleanEmail}`, JSON.stringify(parsed));
+            }
+          } catch (e) {}
+
           window.history.replaceState({}, document.title, window.location.pathname);
           onStartSession({
             type: 'user',
-            email,
+            email: cleanEmail,
             estadoPago: 'Pagado',
           });
         }
@@ -250,6 +266,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       try {
         const storedUser = JSON.parse(storedUserStr);
         if (storedUser.password === userPassword) {
+          if (storedUser.estadoPago === 'Pendiente') {
+            setUserError('Tu cuenta tiene la suscripción pendiente de pago.');
+            setCurrentUserPending(cleanEmail);
+            setShowStripeCheckout(true);
+            return;
+          }
           onStartSession({
             type: 'user',
             email: cleanEmail,
@@ -280,10 +302,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
 
     setRegLoading(true);
 
-    // Guardar usuario en localStorage para compatibilidad estática
+    // Guardar usuario inicialmente como Pendiente de Pago
     localStorage.setItem(
       `registered_user_${cleanEmail}`,
-      JSON.stringify({ email: cleanEmail, password: cleanPassword, estadoPago: 'Pagado' })
+      JSON.stringify({ email: cleanEmail, password: cleanPassword, estadoPago: 'Pendiente' })
     );
 
     try {
@@ -301,8 +323,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
-        if (!res.ok) {
-          setRegError(data.message || 'Error al completar el registro.');
+        if (!res.ok || data.error) {
+          setRegError(data.message || data.error || 'Error al completar el registro.');
           setRegLoading(false);
           return;
         }
@@ -311,18 +333,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStartSession }) => {
       // Ignorar error de red si estamos en hosting estático
     }
 
+    // Redirigir inmediatamente a la pasarela de pago de Stripe
+    try {
+      const stripeRes = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+      const contentType = stripeRes.headers.get('content-type') || '';
+      if (stripeRes.ok && contentType.includes('application/json')) {
+        const stripeData = await stripeRes.json();
+        if (stripeData.url) {
+          window.location.href = stripeData.url;
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('No se pudo conectar automáticamente con Stripe Checkout:', err);
+    }
+
     setShowRegisterModal(false);
     setRegNombre('');
     setRegApellidos('');
     setRegEmail('');
     setRegPassword('');
-
-    onStartSession({
-      type: 'user',
-      email: cleanEmail,
-      estadoPago: 'Pagado',
-    });
     setRegLoading(false);
+    setCurrentUserPending(cleanEmail);
+    setShowStripeCheckout(true);
   };
 
   // Real Stripe Checkout initiation
