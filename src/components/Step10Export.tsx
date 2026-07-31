@@ -174,16 +174,35 @@ export const Step10Export: React.FC<Step10Props> = ({ sda, onSaveSdA, onPrev }) 
 
     lines.push(`6. ATENCIÓN A LA DIVERSIDAD (NEAE Y DUA)`);
     (sda.adaptacionesNEAE || []).forEach((a) => {
-      lines.push(`* [${a.categoria}]: Materiales: ${a.materialesYEspacio} | Reglas: ${a.reglasYMetodologia}`);
+      const cat = a.categoria || (a as any).casuistica || 'Atención a la Diversidad';
+      const mat = a.materialesYEspacio || (a as any).medida || 'Adaptación de materiales, espacios y terrenos.';
+      const reg = a.reglasYMetodologia || 'Flexibilización de reglas y tiempos.';
+      lines.push(`* [NEAE: ${cat}]: Materiales: ${mat} | Reglas: ${reg}`);
     });
     (sda.pautasDUAGlobales || []).forEach((d: any) => {
-      lines.push(`* ${typeof d === 'string' ? d : d.principio}`);
+      lines.push(`* Pauta DUA: ${typeof d === 'string' ? d : d.principio || d.pauta || ''}`);
     });
 
-    lines.push(`\n7. EVALUACIÓN FORMATIVA`);
-    (sda.instrumentosEvaluacion || []).forEach((inst) => {
-      lines.push(`* ${inst.tipo || inst.nombre}: ${inst.descripcion}`);
-    });
+    lines.push(`\n7. EVALUACIÓN FORMATIVA, DIAGNÓSTICA Y RÚBRICA CRITERIAL`);
+    if (sda.evaluacionInicial) {
+      lines.push(`\n--- Evaluación Inicial y Diagnóstica ---`);
+      lines.push(`${sda.evaluacionInicial}`);
+    }
+    if (sda.rubrica && sda.rubrica.length > 0) {
+      lines.push(`\n--- Rúbrica de Evaluación Formativa Criterial (4 Niveles) ---`);
+      sda.rubrica.forEach((r) => {
+        lines.push(`* Criterio ${r.criterioCodigo}: ${r.criterioTexto}`);
+        (r.niveles || []).forEach((n) => {
+          lines.push(`  - [${n.nivel}]: ${n.descriptor}`);
+        });
+      });
+    }
+    if (sda.instrumentosEvaluacion && sda.instrumentosEvaluacion.length > 0) {
+      lines.push(`\n--- Instrumentos de Evaluación ---`);
+      sda.instrumentosEvaluacion.forEach((inst) => {
+        lines.push(`* ${inst.tipo || inst.nombre}: ${inst.descripcion}`);
+      });
+    }
 
     lines.push(`\n8. FUENTES ESPECÍFICAS UTILIZADAS Y DOCUMENTACIÓN CONSULTADA`);
     if (sda.driveFolderName) {

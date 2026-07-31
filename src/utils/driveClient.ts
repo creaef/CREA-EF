@@ -121,28 +121,31 @@ export async function readDriveFilesClient(
     }
   }
 
-  for (const fId of fileIds) {
-    try {
-      const metaRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fId}?fields=id,name,mimeType`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (metaRes.ok) {
-        const meta = await metaRes.json();
-        await readFileContent(meta.id, meta.name, meta.mimeType);
-      }
-    } catch (e) {}
-  }
-
-  for (const folId of folderIds) {
-    try {
-      const listRes = await fetchDriveItemsClient(accessToken, folId, '');
-      for (const item of listRes.items) {
-        if (!item.isFolder) {
-          await readFileContent(item.id, item.name, item.mimeType);
+  await Promise.all(
+    fileIds.map(async (fId) => {
+      try {
+        const metaRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fId}?fields=id,name,mimeType`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (metaRes.ok) {
+          const meta = await metaRes.json();
+          await readFileContent(meta.id, meta.name, meta.mimeType);
         }
-      }
-    } catch (e) {}
-  }
+      } catch (e) {}
+    })
+  );
+
+  await Promise.all(
+    folderIds.map(async (folId) => {
+      try {
+        const listRes = await fetchDriveItemsClient(accessToken, folId, '');
+        const nonFolderItems = listRes.items.filter((item) => !item.isFolder);
+        await Promise.all(
+          nonFolderItems.map((item) => readFileContent(item.id, item.name, item.mimeType))
+        );
+      } catch (e) {}
+    })
+  );
 
   return { text: allText, filesCount };
 }

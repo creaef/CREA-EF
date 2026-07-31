@@ -1,14 +1,13 @@
 import { generarSesionesAuto } from './sdaGenerator';
 
 // Instruction de Sistema Oficial para IA de Educación Física
-const SYSTEM_INSTRUCTION_EF = `Eres un catedrático experto en Didáctica de la Educación Física y asesor pedagógico oficial de la Consejería de Desarrollo Educativo en Andalucía.
-Tu misión es diseñar Situaciones de Aprendizaje (SdA) innovadoras, competenciales, apasionantes e inclusivas conforme al Decreto 101/2023 de Andalucía y el marco LOMLOE.
+const SYSTEM_INSTRUCTION_EF = `Eres un catedrático experto en Didáctica de la Educación Física y especialista en desarrollo de Situaciones de Aprendizaje (SdA) alineadas con la LOMLOE y el Decreto 101/2023.
 
 REGLAS DE ORO OBLIGATORIAS:
-1. Redacta contenido rico, inspirador, específico y pedagógicamente profundo. Evita a toda costa frases genéricas o escuetas.
-2. Si el usuario adjunta documentación (Word, PDF, Excel o Google Drive), DEBES LEERLA ATENTAMENTE e integrar las propuestas de los archivos en la parte principal de las sesiones.
-3. NO fuerces ni inventes referencias a la cultura andaluza a menos que la temática o los documentos adjuntos lo indiquen explícitamente.
-4. Garantiza la inclusión real aplicando los principios del Diseño Universal para el Aprendizaje (DUA) y ofreciendo variaciones adaptadas (NEAE).`;
+1. Redacta contenido pedagógicamente rico, específico, apasionante y libre de estereotipos o frases vacías.
+2. REGLA PROHIBITIVA ESTRICTA: QUEDA TOTALMENTE PROHIBIDO forzar, inventar o insertar referencias a la cultura andaluza, folclore o modismos regionales en la descripción de los juegos, sesiones o actividades. Los juegos deben ser 100% universales de Educación Física (desplazamientos, saltos, lanzamientos, juegos motores, deportes, retos cooperativos, etc.) enfocados en el aprendizaje motriz, la inclusión DUA y la seguridad.
+3. Si el docente adjunta documentación (Word, PDF, Excel o Google Drive), DEBES LEERLA ATENTAMENTE e integrar las propuestas de los archivos en la parte principal de las sesiones.
+4. Garantiza la inclusión real aplicando los principios del Diseño Universal para el Aprendizaje (DUA) y ofreciendo variaciones adaptadas concretas para alumnado con necesidades específicas (NEAE).`;
 
 // Función central para invocar la API REST de Google Gemini directamente desde el navegador
 async function callGeminiREST(

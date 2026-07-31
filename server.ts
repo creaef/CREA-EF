@@ -105,12 +105,15 @@ async function callGeminiWithRetry(
   throw lastError || new Error('El servicio de la API de Gemini no está disponible en este momento. Por favor, inténtalo de nuevo en unos instantes.');
 }
 
-// System instruction prompt for Andalusian EF LOMLOE Expert
-const SYSTEM_INSTRUCTION_EF = `
-Actúa como un Experto Docente en Educación Física y Desarrollador de Situaciones de Aprendizaje (SdA) para Educación Primaria en la Comunidad Autónoma de Andalucía (España), bajo la normativa LOMLOE (Decreto 101/2023 de Andalucía y Orden de 30 de mayo de 2023).
-Tus propuestas deben ser pedagógicamente impecables, inclusivas (Marco DUA y atención NEAE), fundamentadas en metodologías activas y estrictamente alineadas con los Criterios de Evaluación y Competencias Específicas andaluzas de Educación Física.
-Responde siempre en español profesional, motivador y docente.
-`;
+// System instruction prompt for EF LOMLOE Expert
+const SYSTEM_INSTRUCTION_EF = `Eres un catedrático experto en Didáctica de la Educación Física y especialista en desarrollo de Situaciones de Aprendizaje (SdA) alineadas con la LOMLOE y el Decreto 101/2023.
+
+REGLAS DE ORO OBLIGATORIAS:
+1. Redacta contenido pedagógicamente rico, específico, apasionante y libre de estereotipos o frases vacías.
+2. REGLA PROHIBITIVA ESTRICTA: QUEDA TOTALMENTE PROHIBIDO forzar, inventar o insertar referencias a la cultura andaluza, folclore o modismos regionales en la descripción de los juegos, sesiones o actividades. Los juegos deben ser 100% universales de Educación Física (desplazamientos, saltos, lanzamientos, juegos motores, deportes, retos cooperativos, etc.) enfocados en el aprendizaje motriz, la inclusión DUA y la seguridad.
+3. Si el docente adjunta documentación (Word, PDF, Excel o Google Drive), DEBES LEERLA ATENTAMENTE e integrar las propuestas de los archivos en la parte principal de las sesiones.
+4. Garantiza la inclusión real aplicando los principios del Diseño Universal para el Aprendizaje (DUA) y ofreciendo variaciones adaptadas concretas para alumnado con necesidades específicas (NEAE).
+Responde siempre en español profesional, motivador y docente.`;
 
 /**
  * Safely parses JSON strings returned by AI models, stripping markdown fences,
@@ -1497,16 +1500,21 @@ app.post('/api/docs/create-doc', async (req, res) => {
     segments.push({ text: `7. ATENCIÓN A LA DIVERSIDAD (NEAE Y PAUTAS DUA)\n`, style: 'heading1' });
     if (sda.adaptacionesNEAE && sda.adaptacionesNEAE.length > 0) {
       sda.adaptacionesNEAE.forEach((a: any) => {
-        segments.push({ text: `* Adaptación NEAE [${a.categoria}]:\n`, style: 'boldLabel' });
-        segments.push({ text: `  Materiales y Espacio: ${a.materialesYEspacio}\n` });
-        segments.push({ text: `  Reglas y Metodología: ${a.reglasYMetodologia}\n` });
-        segments.push({ text: `  Pautas Docente: ${a.pautasDocente}\n` });
+        const cat = a.categoria || a.casuistica || 'Atención a la Diversidad';
+        const mat = a.materialesYEspacio || a.medida || 'Adaptación de materiales, espacios y balones acolchados.';
+        const reg = a.reglasYMetodologia || 'Flexibilización de tiempos, normas y apoyos visuales DUA.';
+        const pau = a.pautasDocente || 'Refuerzo positivo, clima inclusivo y tutorías de apoyo entre iguales.';
+        segments.push({ text: `* Adaptación NEAE [${cat}]:\n`, style: 'boldLabel' });
+        segments.push({ text: `  - Materiales y Espacio: ${mat}\n` });
+        segments.push({ text: `  - Reglas y Metodología: ${reg}\n` });
+        segments.push({ text: `  - Pautas Docente: ${pau}\n` });
       });
     }
     if (sda.pautasDUAGlobales && sda.pautasDUAGlobales.length > 0) {
       sda.pautasDUAGlobales.forEach((d: any) => {
-        const titleStr = typeof d === 'string' ? d : d.principio;
-        segments.push({ text: `* ${titleStr}:\n`, style: 'boldLabel' });
+        const titleStr = typeof d === 'string' ? d : d.principio || d.pauta || 'Pauta DUA';
+        segments.push({ text: `* Pauta DUA: `, style: 'boldLabel' });
+        segments.push({ text: `${titleStr}\n` });
         if (typeof d !== 'string' && Array.isArray(d.pautas)) {
           d.pautas.forEach((p: string) => {
             segments.push({ text: `  - ${p}\n` });
@@ -1516,12 +1524,31 @@ app.post('/api/docs/create-doc', async (req, res) => {
     }
     segments.push({ text: `\n` });
 
-    segments.push({ text: `8. EVALUACIÓN FORMATIVA E INSTRUMENTOS\n`, style: 'heading1' });
+    segments.push({ text: `8. EVALUACIÓN FORMATIVA, DIAGNÓSTICA Y RÚBRICA CRITERIAL\n`, style: 'heading1' });
+    if (sda.evaluacionInicial) {
+      segments.push({ text: `Evaluación Inicial y Diagnóstica:\n`, style: 'boldLabel' });
+      segments.push({ text: `${sda.evaluacionInicial}\n\n` });
+    }
+
+    if (sda.rubrica && sda.rubrica.length > 0) {
+      segments.push({ text: `Rúbrica de Evaluación Formativa Criterial (4 Niveles):\n`, style: 'boldLabel' });
+      sda.rubrica.forEach((r: any) => {
+        segments.push({ text: `* Criterio ${r.criterioCodigo || ''}: ${r.criterioTexto || ''}\n`, style: 'heading2' });
+        if (Array.isArray(r.niveles)) {
+          r.niveles.forEach((n: any) => {
+            segments.push({ text: `  [${n.nivel}]: `, style: 'boldLabel' });
+            segments.push({ text: `${n.descriptor}\n` });
+          });
+        }
+      });
+      segments.push({ text: `\n` });
+    }
+
     if (sda.instrumentosEvaluacion && sda.instrumentosEvaluacion.length > 0) {
+      segments.push({ text: `Instrumentos de Evaluación Formativa:\n`, style: 'boldLabel' });
       sda.instrumentosEvaluacion.forEach((inst: any) => {
-        segments.push({ text: `* Instrumento: ${inst.tipo || inst.nombre}\n`, style: 'boldLabel' });
-        segments.push({ text: `  Descripción: ${inst.descripcion}\n` });
-        segments.push({ text: `  Aplicación: ${inst.aplicacion}\n` });
+        segments.push({ text: `* Instrumento: ${inst.tipo || inst.nombre || 'Evaluación Formativa'}\n`, style: 'boldLabel' });
+        segments.push({ text: `  Descripción: ${inst.descripcion || 'Registro cualitativo de competencias.'}\n` });
       });
     }
 

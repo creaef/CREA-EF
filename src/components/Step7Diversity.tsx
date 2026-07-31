@@ -87,11 +87,19 @@ export const Step7Diversity: React.FC<Step7Props> = ({
 
       if (data) {
         if (data.medidasNeae) {
-          const adaptacionesFormatted = data.medidasNeae.map((medida: string, idx: number) => ({
-            id: `neae-${idx + 1}`,
-            casuistica: selectedCases[idx] || 'General',
-            medida,
-          }));
+          const adaptacionesFormatted = data.medidasNeae.map((item: any, idx: number) => {
+            const casuisticaName = selectedCases[idx] || (typeof item === 'object' && item.categoria) || 'Atención a la Diversidad General';
+            const medStr = typeof item === 'string' ? item : item.materialesYEspacio || item.medida || '';
+            return {
+              id: `neae-${idx + 1}`,
+              categoria: casuisticaName,
+              casuistica: casuisticaName,
+              materialesYEspacio: medStr || 'Adaptación de materiales, terrenos y balones acolchados/sonoros.',
+              reglasYMetodologia: (typeof item === 'object' && item.reglasYMetodologia) || 'Flexibilización de reglas, tiempos y apoyos visuales DUA.',
+              pautasDocente: (typeof item === 'object' && item.pautasDocente) || 'Feedback positivo, clima de aula seguro y tutorías entre iguales.',
+              medida: medStr,
+            };
+          });
           setAdaptacionesNEAE(adaptacionesFormatted);
         }
         if (data.pautasDua) {
