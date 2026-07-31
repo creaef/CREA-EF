@@ -29,10 +29,10 @@ function getStripeClient(): Stripe | null {
 app.use(express.json({ limit: '10mb' }));
 
 // Lazy initializer for Gemini Client
-function getGenAIClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
+function getGenAIClient(customApiKey?: string) {
+  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('La clave GEMINI_API_KEY no está configurada en las variables de entorno.');
+    throw new Error('La clave GEMINI_API_KEY no está configurada.');
   }
   return new GoogleGenAI({
     apiKey,
@@ -531,7 +531,7 @@ app.post('/api/ai/generate-justification', async (req, res) => {
       return res.status(400).json({ error: 'Título y temática son requeridos.' });
     }
 
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
     const prompt = `Redacta una justificación pedagógica y motivadora (entre 120 y 200 palabras) para una Situación de Aprendizaje de Educación Física en Andalucía.
 Título: "${titulo}"
 Curso/Nivel: ${curso} (${ciclo})
@@ -566,7 +566,7 @@ app.post('/api/ai/generate-rubric', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere una lista de criterios de evaluación.' });
     }
 
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
     const prompt = `Genera los descriptores de una Rúbrica de Evaluación Formativa para los siguientes Criterios de Evaluación de Educación Física (LOMLOE Andalucía):
 ${JSON.stringify(criterios, null, 2)}
 
@@ -606,7 +606,7 @@ Devuelve una respuesta en formato JSON estricto con el siguiente esquema:
 app.post('/api/ai/generate-final-challenge', async (req, res) => {
   try {
     const { titulo, curso, tematica, metodologia } = req.body;
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
     const prompt = `Propón un Producto Final o Reto Motor motivador, significativo e inclusivo para culminar una Situación de Aprendizaje de Educación Física en Andalucía.
 Título: "${titulo}"
@@ -645,9 +645,10 @@ app.post('/api/ai/generate-sessions', async (req, res) => {
       modeloEstructura,
       criteriosSeleccionados,
       driveDocumentationText,
+      userGeminiApiKey,
     } = req.body;
 
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(userGeminiApiKey);
 
     let documentationInstruction = '';
     if (driveDocumentationText && driveDocumentationText.trim().length > 0) {
@@ -852,7 +853,7 @@ Devuelve una respuesta JSON estricta con este formato:
 app.post('/api/ai/enrich-game-description', async (req, res) => {
   try {
     const { nombreJuego, descripcion, tematica, curso } = req.body;
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
     const prompt = `Actúa como Catedrático Experto en Didáctica de la Educación Física y LOMLOE en Andalucía.
 Completa, re-genera o desarrolla en su totalidad el siguiente juego/actividad para Educación Física (${curso || 'Educación Primaria'}, temática: "${tematica || 'General'}"):
@@ -920,7 +921,7 @@ app.post('/api/ai/enrich-full-session', async (req, res) => {
       return res.status(400).json({ error: 'Datos de sesión incompletos.' });
     }
 
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
     const prompt = `Actúa como Catedrático de Educación Física. Analiza y autocompleta/enriquece TODAS las actividades de la siguiente sesión.
 Si alguna actividad está vacía, incompleta, sin explicación o con datos escasos, REGENÉRALA O COMPLÉTALA con un juego de Educación Física muy detallado para ${curso || 'Primaria'} y temática "${tematica || 'General'}".
 
@@ -1044,7 +1045,7 @@ app.post('/api/parse-local-file', async (req, res) => {
 app.post('/api/ai/generate-diversity', async (req, res) => {
   try {
     const { neaeSeleccionadas, sdaContext } = req.body;
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
     const prompt = `Genera la propuesta de Atención a la Diversidad para la Situación de Aprendizaje de Educación Física.
 Contexto:
@@ -1106,7 +1107,7 @@ Devuelve una respuesta JSON estricta con esta estructura:
 app.post('/api/ai/generate-evaluation-tools', async (req, res) => {
   try {
     const { selectedInstrumentTypes, tematica, criteriosSeleccionados, curso } = req.body;
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
     const prompt = `Genera los Instrumentos de Evaluación Formativa seleccionados por el docente para una Situación de Aprendizaje de Educación Física en Andalucía (${curso}).
 Temática(s): ${tematica}
@@ -1625,7 +1626,7 @@ app.post('/api/ai/generate-initial-eval', async (req, res) => {
   try {
     const { tematica, curso, criteriosSeleccionados } = req.body;
 
-    const ai = getGenAIClient();
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
     const prompt = `Redacta una estrategia de Evaluación Inicial / Diagnóstica para una Situación de Aprendizaje de Educación Física en Primaria (${curso}):
 Temática: "${tematica || 'Educación Física'}"
 Criterios de Evaluación: ${JSON.stringify(criteriosSeleccionados || [])}

@@ -199,6 +199,9 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
     if (!accessToken) return;
     setLoadingItems(true);
     setErrorMsg(null);
+
+    let loadedSuccessfully = false;
+
     try {
       const res = await fetch('/api/drive/list', {
         method: 'POST',
@@ -210,30 +213,32 @@ export const GoogleDriveSelectorModal: React.FC<GoogleDriveSelectorModalProps> =
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         setItems(data.items || []);
-        return;
+        loadedSuccessfully = true;
       }
     } catch (err) {
       // Direct client fallback
     }
 
-    // Direct Google Drive REST API Client Fallback (Firebase Hosting static deployment)
-    try {
-      const data = await fetchDriveItemsClient(accessToken, folderId, search);
-      setItems(data.items || []);
-    } catch (err: any) {
-      console.error(err);
-      if (err.message?.includes('expirado') || err.message?.includes('401')) {
-        try {
-          localStorage.removeItem('sda_drive_access_token');
-        } catch (e) {}
-        setAccessToken('');
-        setErrorMsg('Tu sesión de Google Drive ha expirado. Por favor, haz clic en "Iniciar sesión con Google Drive" para reconectar tu cuenta.');
-        return;
+    if (!loadedSuccessfully) {
+      // Direct Google Drive REST API Client Fallback (Firebase Hosting static deployment)
+      try {
+        const data = await fetchDriveItemsClient(accessToken, folderId, search);
+        setItems(data.items || []);
+      } catch (err: any) {
+        console.error(err);
+        if (err.message?.includes('expirado') || err.message?.includes('401')) {
+          try {
+            localStorage.removeItem('sda_drive_access_token');
+          } catch (e) {}
+          setAccessToken('');
+          setErrorMsg('Tu sesión de Google Drive ha expirado. Por favor, haz clic en "Iniciar sesión con Google Drive" para reconectar tu cuenta.');
+        } else {
+          setErrorMsg(err.message || 'No se pudieron cargar los contenidos de tu Google Drive.');
+        }
       }
-      setErrorMsg(err.message || 'No se pudieron cargar los contenidos de tu Google Drive.');
-    } finally {
-      setLoadingItems(false);
     }
+
+    setLoadingItems(false);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {

@@ -86,7 +86,12 @@ export async function fetchApiJson<T>(
     // Conmuta a la IA en cliente
   }
 
-  return await fallbackFn();
+}
+
+function getUserApiKey(): string | undefined {
+  if (typeof localStorage === 'undefined') return undefined;
+  const key = localStorage.getItem('user_gemini_api_key');
+  return key && key.trim() ? key.trim() : undefined;
 }
 
 // 1. Generar Justificación de la SdA con IA Gemini Real
@@ -101,7 +106,7 @@ export async function generateJustificationApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
@@ -142,7 +147,7 @@ export async function generateRubricApi(criterios: any[]): Promise<any[]> {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ criterios }),
+      body: JSON.stringify({ criterios, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
@@ -194,7 +199,7 @@ export async function generateInitialEvalApi(params: { tematica: string; curso: 
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
@@ -238,7 +243,7 @@ export async function generateDiversityApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
@@ -295,7 +300,7 @@ export async function generateFinalChallengeApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
@@ -340,7 +345,7 @@ export async function generateSessionsApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
@@ -472,7 +477,7 @@ export async function enrichFullSessionApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
@@ -500,7 +505,7 @@ export async function generateEvaluationToolsApi(params: { tematica: string; cic
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
     },
     async () => {
       try {
