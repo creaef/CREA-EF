@@ -13,19 +13,33 @@ import { BASE_DATOS_ACTIVIDADES } from '../data/activitiesDatabase';
 import { COMPETENCIAS_ESPECIFICAS_EF, CRITERIOS_EVALUACION_EF, SABERES_BASICOS_EF, ODS_LIST } from '../data/curriculumData';
 import { MODELOS_ESTRUCTURA_SESION, PAUTAS_DUA_GLOBALES, ADAPTACIONES_NEAE_BASE, INSTRUMENTOS_EVALUACION_DEFAULT } from '../data/methodologiesAndModels';
 
-// Filter database activities by cycle & theme
-export function getActividadesFiltradas(ciclo: Ciclo, tematica: TematicaEF): JuegoActividadDB[] {
-  let list = BASE_DATOS_ACTIVIDADES.filter(
-    (act) => (act.ciclo === ciclo || act.ciclo === 'Todos') && act.tematica === tematica
-  );
+// Filter database activities by cycle & theme respecting strict regional rule
+export function getActividadesFiltradas(ciclo: Ciclo, tematica: string): JuegoActividadDB[] {
+  const normTematica = String(tematica || '').toLowerCase().trim();
+  const isAndalucianTheme = /andaluz|andalucía|flamenco|sevillana|giralda|alhambra/i.test(normTematica);
 
-  // Fallback: If filtered list is small, include activities from "Todos" or related themes
-  if (list.length < 3) {
-    const fallbacks = BASE_DATOS_ACTIVIDADES.filter(
-      (act) => act.ciclo === ciclo || act.ciclo === 'Todos'
-    );
+  let list = BASE_DATOS_ACTIVIDADES.filter((act) => {
+    const actCicloMatch = act.ciclo === ciclo || act.ciclo === 'Todos';
+    const actTematicaNorm = act.tematica.toLowerCase();
+    const isExactMatch = actTematicaNorm === normTematica;
+    const isPartialMatch = actTematicaNorm.includes(normTematica) || normTematica.includes(actTematicaNorm);
+    return actCicloMatch && (isExactMatch || isPartialMatch);
+  });
+
+  // Fallback: If filtered list is small, include activities from neutral/universal themes
+  if (list.length < 6) {
+    const fallbacks = BASE_DATOS_ACTIVIDADES.filter((act) => {
+      const actCicloMatch = act.ciclo === ciclo || act.ciclo === 'Todos';
+      const isActAndalucian = /andaluz|andalucía|flamenco|sevillana|giralda|alhambra/i.test(act.tematica + ' ' + act.nombre);
+      if (!isAndalucianTheme && isActAndalucian) {
+        return false; // REGLA ESTRICTA: Excluir juegos andaluces si la temática no los solicita explícitamente
+      }
+      return actCicloMatch;
+    });
+
     list = [...list, ...fallbacks.filter((f) => !list.some((l) => l.id === f.id))];
   }
+
   return list;
 }
 

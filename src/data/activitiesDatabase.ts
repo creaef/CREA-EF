@@ -400,6 +400,65 @@ export const BASE_DATOS_ACTIVIDADES: JuegoActividadDB[] = [
       'Controlar la intensidad del contacto. Entorno de baja iluminación o libre de ruido excesivo.',
     materiales: ['Pelotas de tenis o sensoriales', 'Música ambiental suave'],
   },
+  // ==========================================
+  // TEMÁTICAS UNIVERSALES Y DEPORTES GENERALES (NEUTROS)
+  // ==========================================
+  {
+    id: 'dep-01',
+    nombre: 'Relevos de Precisión y Desplazamientos Rápidos',
+    tematica: 'Deportes de Equipo e Iniciación Deportiva',
+    ciclo: 'Todos',
+    conexionCurricular: 'CE.EF.2 - Resolución de situaciones motrices',
+    criteriosEvaluacion: ['EFI.2.1.b', 'EFI.2.2.b'],
+    faseIdeal: 'Principal',
+    descripcion:
+      'En 4 equipos, los alumnos realizan desplazamientos variados (sprint, bote de balón, pase) hasta la zona de meta para anotar un objetivo de precisión en equipo.',
+    atencionDiversidad:
+      'DUA: Adaptación de distancias de tiro y tamaño de pelotas para garantizar el éxito.',
+    materiales: ['Conos', 'Balones de baloncesto/balonmano', 'Aros'],
+  },
+  {
+    id: 'par-01',
+    nombre: 'Circuito de Parkour Urbano y Saltos Seguros',
+    tematica: 'Parkour, Acrosport y Retos Gimnásticos',
+    ciclo: 'Todos',
+    conexionCurricular: 'CE.EF.2 - Control corporal y resolución de problemas motores',
+    criteriosEvaluacion: ['EFI.2.1.b', 'EFI.3.2.1.b'],
+    faseIdeal: 'Principal',
+    descripcion:
+      'Circuito continuo con recepción sobre colchonetas, apoyos en plinto, pasavallas suaves y equilibrios sobre bancos suecos.',
+    atencionDiversidad:
+      'DUA: Recorridos alternativos con diferente altura y apoyos de sujeción docente.',
+    materiales: ['Colchonetas', 'Bancos suecos', 'Quitamiedos', 'Picas'],
+  },
+  {
+    id: 'exp-neu-01',
+    nombre: 'Esculturas en Acción y Mímica en Grupo',
+    tematica: 'Expresión Corporal y Danza',
+    ciclo: 'Todos',
+    conexionCurricular: 'CE.EF.4 - Expresión y comunicación corporal',
+    criteriosEvaluacion: ['EFI.4.1.b', 'EFI.4.2.b'],
+    faseIdeal: 'Principal',
+    descripcion:
+      'Por pequeños grupos, los estudiantes representan situaciones de la vida diaria, deportes o animales usando el cuerpo sin hablar para que los demás lo adivinen.',
+    atencionDiversidad:
+      'DUA: Tarjetas con pictogramas e ideas de apoyo para la representación.',
+    materiales: ['Altavoz', 'Tarjetas con retos expresivos'],
+  },
+  {
+    id: 'atl-01',
+    nombre: 'Desafío de Saltos, Lanzamientos y Velocidad',
+    tematica: 'Habilidades Motrices Básicas y Genéricas',
+    ciclo: 'Todos',
+    conexionCurricular: 'CE.EF.2 - Habilidades motrices básicas',
+    criteriosEvaluacion: ['EFI.2.1.b'],
+    faseIdeal: 'Principal',
+    descripcion:
+      'Estaciones rotativas de salto de longitud con pies juntos, lanzamiento de jabalina de gomaespuma y carrera de agilidad en zigzag.',
+    atencionDiversidad:
+      'DUA: Zonas de lanzamiento adaptadas y marcas visuales en el suelo.',
+    materiales: ['Jabalinas de espuma', 'Cintas métricas', 'Conos', 'Huellas'],
+  },
   {
     id: 'cal-02',
     nombre: 'La Diana de Autoevaluación y Semáforo Emocional',

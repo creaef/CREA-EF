@@ -239,8 +239,10 @@ export async function generateDiversityApi(params: {
   tematica: string;
   ciclo: string;
   necesidades?: string;
+  neaeSeleccionadas?: string[];
+  sdaContext?: any;
 }): Promise<any> {
-  return fetchApiJson<{ adaptaciones: any }>(
+  return fetchApiJson<any>(
     '/api/ai/generate-diversity',
     {
       method: 'POST',
@@ -250,7 +252,7 @@ export async function generateDiversityApi(params: {
     async () => {
       try {
         const prompt = `Diseña las medidas de Atención a la Diversidad (DUA y NEAE) para Educación Física (${params.tematica}, ${params.ciclo}).
-Necesidades especificadas: ${params.necesidades || 'Diversidad general en el aula (TDAH, motórica, auditiva, visual, TEA)'}.
+Necesidades especificadas: ${params.necesidades || (params.neaeSeleccionadas ? params.neaeSeleccionadas.join(', ') : 'Diversidad general en el aula (TDAH, motórica, auditiva, visual, TEA)')}.
 
 Devuelve en JSON:
 {
@@ -268,7 +270,8 @@ Devuelve en JSON:
 
         const jsonText = await callGeminiREST(prompt, SYSTEM_INSTRUCTION_EF, 'application/json');
         if (jsonText) {
-          return { adaptaciones: JSON.parse(jsonText) };
+          const parsed = JSON.parse(jsonText);
+          return { adaptaciones: parsed, adaptacionesNEAE: parsed.adaptacionesNEAE || [], pautasDUA: parsed.pautasDUA || [] };
         }
       } catch (e) {}
 
@@ -287,7 +290,7 @@ Devuelve en JSON:
         },
       };
     }
-  ).then((res) => (res && res.adaptaciones) || {});
+  ).then((res) => (res && (res.adaptaciones || res)) || {});
 }
 
 // 5. Generar Reto Final Apasionante con IA Gemini Real
@@ -501,7 +504,13 @@ Devuelve el objeto de la sesión enriquecido en formato JSON.`;
 }
 
 // 8. Generar Herramientas de Evaluación con IA Gemini Real
-export async function generateEvaluationToolsApi(params: { tematica: string; ciclo: string }): Promise<any[]> {
+export async function generateEvaluationToolsApi(params: {
+  tematica: string;
+  ciclo: string;
+  selectedInstrumentTypes?: string[];
+  criteriosSeleccionados?: string[];
+  curso?: string;
+}): Promise<any[]> {
   return fetchApiJson<{ herramientas: any[] }>(
     '/api/ai/generate-evaluation-tools',
     {
@@ -511,19 +520,20 @@ export async function generateEvaluationToolsApi(params: { tematica: string; cic
     },
     async () => {
       try {
-        const prompt = `Diseña 3 Instrumentos de Evaluación Formativa para Educación Física (${params.tematica}, ${params.ciclo}):
-1. Rúbrica Analítica Criterial DUA (Heteroevaluación)
-2. Diana de Autoevaluación Motriz
-3. Registro de Coevaluación en Parejas
+        const prompt = `Diseña Instrumentos de Evaluación Formativa para Educación Física (${params.tematica}, ${params.curso || params.ciclo}).
+Tipos de instrumentos a incluir: ${JSON.stringify(params.selectedInstrumentTypes || ['Rúbrica', 'Lista de Cotejo', 'Diana de Autoevaluación'])}
+Criterios trabajados: ${JSON.stringify(params.criteriosSeleccionados || [])}
 
 Devuelve en JSON:
 [
-  { "nombre": "...", "tipo": "...", "descripcion": "..." }
+  { "nombre": "...", "tipo": "...", "descripcion": "...", "aplicacion": "...", "itemsOIndicadores": ["...", "..."] }
 ]`;
 
         const jsonText = await callGeminiREST(prompt, SYSTEM_INSTRUCTION_EF, 'application/json');
         if (jsonText) {
-          return { herramientas: JSON.parse(jsonText) };
+          const parsed = JSON.parse(jsonText);
+          const arrayTools = Array.isArray(parsed) ? parsed : (parsed.herramientas || []);
+          return { herramientas: arrayTools };
         }
       } catch (e) {}
 

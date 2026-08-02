@@ -93,6 +93,9 @@ export const Step8Evaluation: React.FC<Step8Props> = ({
       const herramientas = await generateEvaluationToolsApi({
         tematica,
         ciclo: curso,
+        selectedInstrumentTypes: selectedTools,
+        criteriosSeleccionados,
+        curso,
       });
 
       if (herramientas && Array.isArray(herramientas)) {

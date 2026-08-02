@@ -83,31 +83,49 @@ export const Step7Diversity: React.FC<Step7Props> = ({
         tematica: sdaContext?.tematica || 'Educación Física',
         ciclo: sdaContext?.ciclo || 'Primer Ciclo',
         necesidades: selectedCases.join(', '),
+        neaeSeleccionadas: selectedCases,
+        sdaContext,
       });
 
       if (data) {
-        if (data.medidasNeae) {
-          const adaptacionesFormatted = data.medidasNeae.map((item: any, idx: number) => {
-            const casuisticaName = selectedCases[idx] || (typeof item === 'object' && item.categoria) || 'Atención a la Diversidad General';
-            const medStr = typeof item === 'string' ? item : item.materialesYEspacio || item.medida || '';
+        const rawNeae = data.adaptacionesNEAE || data.medidasNeae || (data.adaptaciones && data.adaptaciones.adaptacionesNEAE);
+        if (rawNeae && Array.isArray(rawNeae)) {
+          const adaptacionesFormatted = rawNeae.map((item: any, idx: number) => {
+            const casuisticaName = (typeof item === 'object' && (item.categoria || item.casuistica)) || selectedCases[idx] || 'Atención a la Diversidad General';
+            const matEsp = typeof item === 'object' ? (item.materialesYEspacio || item.medida || '') : item;
+            const regMet = typeof item === 'object' ? (item.reglasYMetodologia || '') : 'Flexibilización de reglas y metodologías cooperativas.';
+            const pauDoc = typeof item === 'object' ? (item.pautasDocente || '') : 'Feedback positivo y tutores de apoyo entre iguales.';
+
             return {
               id: `neae-${idx + 1}`,
               categoria: casuisticaName,
               casuistica: casuisticaName,
-              materialesYEspacio: medStr || 'Adaptación de materiales, terrenos y balones acolchados/sonoros.',
-              reglasYMetodologia: (typeof item === 'object' && item.reglasYMetodologia) || 'Flexibilización de reglas, tiempos y apoyos visuales DUA.',
-              pautasDocente: (typeof item === 'object' && item.pautasDocente) || 'Feedback positivo, clima de aula seguro y tutorías entre iguales.',
-              medida: medStr,
+              materialesYEspacio: matEsp || 'Adaptación de materiales y espacios motrices.',
+              reglasYMetodologia: regMet,
+              pautasDocente: pauDoc,
+              medida: `${matEsp}. ${regMet}`,
             };
           });
           setAdaptacionesNEAE(adaptacionesFormatted);
         }
-        if (data.pautasDua) {
-          const pautasFormatted = data.pautasDua.map((pauta: string, idx: number) => ({
-            id: `dua-${idx + 1}`,
-            principio: 'Principio DUA',
-            pauta,
-          }));
+
+        const rawDua = data.pautasDUA || data.pautasDua || (data.adaptaciones && data.adaptaciones.pautasDUA);
+        if (rawDua && Array.isArray(rawDua)) {
+          const pautasFormatted = rawDua.map((item: any, idx: number) => {
+            if (typeof item === 'object' && item.principio) {
+              const pautaStr = Array.isArray(item.pautas) ? item.pautas.join('; ') : item.pauta || item.principio;
+              return {
+                id: `dua-${idx + 1}`,
+                principio: item.principio,
+                pauta: pautaStr,
+              };
+            }
+            return {
+              id: `dua-${idx + 1}`,
+              principio: `Pauta DUA ${idx + 1}`,
+              pauta: typeof item === 'string' ? item : JSON.stringify(item),
+            };
+          });
           setPautasDUA(pautasFormatted);
         }
       }

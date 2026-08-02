@@ -50,19 +50,12 @@ const INITIAL_SDA_STATE: SituacionAprendizaje = {
 };
 
 export default function App() {
+  // Garantizar que la app arranque SIEMPRE en la LandingPage (vías de entrada) para la identificación de usuario
   const [userSession, setUserSession] = useState<UserSession | null>(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('reset') || params.has('test') || params.has('clean')) {
-        localStorage.removeItem('sda_active_user_session');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return null;
-      }
-      const stored = localStorage.getItem('sda_active_user_session');
-      return stored ? JSON.parse(stored) : null;
-    } catch (e) {
-      return null;
-    }
+      localStorage.removeItem('sda_active_user_session');
+    } catch (e) {}
+    return null;
   });
 
   const [currentStep, setCurrentStep] = useState<number>(1);

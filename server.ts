@@ -1047,45 +1047,96 @@ app.post('/api/parse-local-file', async (req, res) => {
 // API 5: Generar Atención a la Diversidad (Adaptaciones NEAE + Pautas DUA)
 app.post('/api/ai/generate-diversity', async (req, res) => {
   try {
-    const { neaeSeleccionadas, sdaContext } = req.body;
+    const { neaeSeleccionadas, necesidades, sdaContext, tematica, ciclo, curso } = req.body;
     const ai = getGenAIClient(req.body.userGeminiApiKey);
 
-    const prompt = `Genera la propuesta de Atención a la Diversidad para la Situación de Aprendizaje de Educación Física.
+    const activeCases = (neaeSeleccionadas && Array.isArray(neaeSeleccionadas) && neaeSeleccionadas.length > 0)
+      ? neaeSeleccionadas
+      : (typeof necesidades === 'string' && necesidades.trim() ? necesidades.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+
+    const themeStr = tematica || sdaContext?.tematica || 'Educación Física';
+    const levelStr = curso || ciclo || sdaContext?.curso || 'Primaria';
+    const titleStr = sdaContext?.titulo || 'Situación de Aprendizaje de EF';
+
+    const prompt = `Diseña la propuesta completa de Atención a la Diversidad (Adaptaciones NEAE y Pautas DUA) para una Situación de Aprendizaje de Educación Física.
 Contexto:
-- Título SdA: "${sdaContext?.titulo || 'Educación Física'}"
-- Curso: ${sdaContext?.curso || 'Primaria'}
-- Temática: ${sdaContext?.tematica || 'Deportes y Juegos'}
-- Producto Final: ${sdaContext?.productoFinal || 'Reto motor'}
-- Casuísticas / Alumnado NEAE seleccionado: ${JSON.stringify(neaeSeleccionadas || [])}
+- Título SdA: "${titleStr}"
+- Curso / Nivel: ${levelStr}
+- Temática: ${themeStr}
+- Alumnado NEAE / Casuísticas seleccionadas: ${JSON.stringify(activeCases)}
 
 Instrucciones:
-1. Para cada tipo de casuística o alumnado NEAE seleccionado (ej: TDAH, Discapacidad Motora, Discapacidad Visual, Discapacidad Auditiva, TEA, Altas Capacidades, etc.), proporciona adaptaciones prácticas específicas para Educación Física en las áreas de materiales, espacios, reglas y pautas docentes.
-2. A continuación, proporciona las Pautas Universales DUA (Diseño Universal para el Aprendizaje) organizadas según las 3 redes DUA (Compromiso, Representación, Acción/Expresión).
+1. Para cada casuística o necesidad NEAE seleccionada (ej: TDAH, Discapacidad Motora, Discapacidad Visual, Discapacidad Auditiva, TEA, Altas Capacidades, etc.), redacta adaptaciones motrices específicas de Educación Física para materiales, espacio, reglas y pautas docentes.
+2. Genera Pautas Universales DUA organizadas según las 3 redes (Compromiso, Representación, Acción/Expresión).
 
 Devuelve una respuesta JSON estricta con esta estructura:
 {
   "adaptacionesNEAE": [
     {
       "categoria": "Categoría o Casuística NEAE",
-      "materialesYEspacio": "Adaptación de materiales y organización espacial",
-      "reglasYMetodologia": "Modificaciones en reglas, tiempo y agrupamientos",
-      "pautasDocente": "Indicaciones clave para el maestro/a durante las clases"
+      "materialesYEspacio": "Adaptación concreta de materiales y organización espacial en el gimnasio/pista",
+      "reglasYMetodologia": "Flexibilización de reglas, tiempos y apoyos en los juegos",
+      "pautasDocente": "Indicaciones clave para el docente y tutores de apoyo"
     }
   ],
   "pautasDUA": [
     {
       "principio": "Pauta I: Proporcionar Múltiples Formas de Compromiso",
-      "pautas": ["Estrategia DUA 1", "Estrategia DUA 2", "Estrategia DUA 3"]
+      "pautas": ["Estrategia DUA 1 de motivación e implicación", "Estrategia DUA 2", "Estrategia DUA 3"]
     },
     {
       "principio": "Pauta II: Proporcionar Múltiples Formas de Representación",
-      "pautas": ["Estrategia DUA 1", "Estrategia DUA 2", "Estrategia DUA 3"]
+      "pautas": ["Estrategia DUA 1 de apoyos visuales y sensoriales", "Estrategia DUA 2", "Estrategia DUA 3"]
     },
     {
       "principio": "Pauta III: Proporcionar Múltiples Formas de Acción y Expresión",
-      "pautas": ["Estrategia DUA 1", "Estrategia DUA 2", "Estrategia DUA 3"]
+      "pautas": ["Estrategia DUA 1 de respuestas variadas y roles flexibles", "Estrategia DUA 2", "Estrategia DUA 3"]
     }
   ]
+}`;
+
+    const response = await callGeminiWithRetry(ai, {
+      model: 'gemini-3.6-flash',
+      contents: prompt,
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION_EF,
+        temperature: 0.5,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const parsed = safeParseAIJson<any>(response.text, {});
+    res.json({
+      adaptaciones: parsed,
+      adaptacionesNEAE: parsed.adaptacionesNEAE || [],
+      pautasDUA: parsed.pautasDUA || [],
+      medidasNeae: (parsed.adaptacionesNEAE || []).map((a: any) => `${a.categoria}: ${a.materialesYEspacio}. ${a.reglasYMetodologia}`),
+      pautasDua: (parsed.pautasDUA || []).flatMap((p: any) => p.pautas || []),
+    });
+  } catch (error: any) {
+    console.error('Error generating diversity:', error);
+    res.status(500).json({ error: error.message || 'Error al generar la atención a la diversidad.' });
+  }
+});
+
+// API 5b: Generar Evaluación Inicial Diagnóstica
+app.post('/api/ai/generate-initial-eval', async (req, res) => {
+  try {
+    const { tematica, curso, ciclo } = req.body;
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
+
+    const prompt = `Diseña la Evaluación Inicial y Diagnóstica para una SdA de Educación Física (${tematica || 'General'}, ${curso || ciclo || 'Primaria'}).
+Devuelve en formato JSON estricto:
+{
+  "evaluacionInicial": {
+    "actividadInicial": "descripción detallada de la sesión o circuito diagnóstico adaptado a la temática ${tematica}",
+    "indicadoresObservacion": [
+      "Grado de control y ejecución motriz específica",
+      "Respeto a las normas de seguridad y juego limpio",
+      "Cooperación y toma de decisiones tácticas en grupo"
+    ],
+    "instrumento": "Escala de observación diagnóstica cualitativa"
+  }
 }`;
 
     const response = await callGeminiWithRetry(ai, {
@@ -1101,19 +1152,19 @@ Devuelve una respuesta JSON estricta con esta estructura:
     const parsed = safeParseAIJson(response.text, {});
     res.json(parsed);
   } catch (error: any) {
-    console.error('Error generating diversity:', error);
-    res.status(500).json({ error: error.message || 'Error al generar la atención a la diversidad.' });
+    console.error('Error generating initial eval:', error);
+    res.status(500).json({ error: error.message || 'Error al generar la evaluación inicial.' });
   }
 });
 
 // API 6: Generar Instrumentos de Evaluación Formativa seleccionados por el usuario
 app.post('/api/ai/generate-evaluation-tools', async (req, res) => {
   try {
-    const { selectedInstrumentTypes, tematica, criteriosSeleccionados, curso } = req.body;
+    const { selectedInstrumentTypes, tematica, criteriosSeleccionados, curso, ciclo } = req.body;
     const ai = getGenAIClient(req.body.userGeminiApiKey);
 
-    const prompt = `Genera los Instrumentos de Evaluación Formativa seleccionados por el docente para una Situación de Aprendizaje de Educación Física en Andalucía (${curso}).
-Temática(s): ${tematica}
+    const prompt = `Genera los Instrumentos de Evaluación Formativa seleccionados por el docente para una Situación de Aprendizaje de Educación Física (${curso || ciclo || 'Primaria'}).
+Temática(s): ${tematica || 'General'}
 Criterios de Evaluación seleccionados: ${JSON.stringify(criteriosSeleccionados || [])}
 Tipos de Instrumentos a generar obligatoriamente: ${JSON.stringify(selectedInstrumentTypes || [])}
 
