@@ -385,7 +385,7 @@ app.post('/api/stripe/create-checkout-session', async (req, res) => {
   }
 
   try {
-    const origin = req.headers.origin || 'http://localhost:3000';
+    const origin = process.env.APP_URL || req.headers.origin || 'http://localhost:3000';
     const session = await stripe.checkout.sessions.create({
       line_items: [
         {
