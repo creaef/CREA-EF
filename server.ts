@@ -661,19 +661,20 @@ app.post('/api/ai/generate-sessions', async (req, res) => {
     let documentationInstruction = '';
     if (driveDocumentationText && driveDocumentationText.trim().length > 0) {
       documentationInstruction = `
-INSTRUCCIÓN CRÍTICA Y PRIORITARIA (BÚSQUEDA Y CUMPLIMENTACIÓN COMPLETA EN BANCOS DE JUEGOS DE EXCEL Y CARPETAS DE GOOGLE DRIVE):
-El docente ha compartido documentación cargada desde su Google Drive o Banco de Juegos Excel:
----
+INSTRUCCIÓN CRÍTICA DE BÚSQUEDA, SELECCIÓN Y COMPLECIÓN DE JUEGOS:
+El docente ha proporcionado la siguiente base de conocimiento (documentos PDF, Word, Excel o carpetas de Drive):
+--- INICIO DOCUMENTACIÓN APORTADA ---
 ${driveDocumentationText.slice(0, 15000)}
----
-REGLAS OBLIGATORIAS DE BÚSQUEDA, EXTRACCIÓN Y CUMPLIMENTACIÓN:
-1. Analiza con alta prioridad aquellos documentos cuyo nombre de archivo o contenido contenga directamente palabras clave relacionadas con la temática ("${tematica}") o con el ciclo/curso (${curso} - ${ciclo}).
-2. CUMPLIMENTACIÓN COMPLETA OBLIGATORIA: Si los juegos o actividades extraídos de la documentación compartida (Drive o Excel) son breves, esquemáticos, parciales o les falta alguna de las 4 partes requeridas, la IA DEBE OBLIGATORIAMENTE CUMPLIMENTAR Y COMPLETAR TODA LA INFORMACIÓN. Debes redactar el desarrollo completo, las reglas, la organización espacial, los roles de alumnado y las variaciones DUA/seguridad para que el juego quede 100% desarrollado y listo para aplicar en clase.
-3. Si se han consultado o extraído juegos de un Banco de Juegos en Excel o de carpetas de Drive, MENCIONA EXPLÍCITAMENTE cada archivo/documento o banco de juegos utilizado en la lista "fuentesUtilizadas" (ej. "Banco de Juegos Excel: Juegos_Acrosport.xlsx", "Carpeta Drive: UD_Habilidades").
-4. Si los archivos seleccionados no contienen suficiente material para completar las 3-4 actividades principales de todas las sesiones, COMPLEMENTA de forma transparente el resto de juegos usando IA Gemini con enfoque LOMLOE.
-5. Identifica con precisión de qué archivos/documentos específicos (indicados en las líneas '--- ARCHIVO / FUENTE: Nombre ---') HAS EXTRAÍDO REALMENTE juegos o información.`;
+--- FIN DOCUMENTACIÓN APORTADA ---
+
+JERARQUÍA MÁXIMA Y REGLAS DE SELECCIÓN DE JUEGOS:
+1. JUEGOS SELECCIONADOS POR EL DOCENTE (PRIORIDAD ALTA): Si en la documentación previa aparecen referencias con "JUEGO SELECCIONADO POR EL DOCENTE", la IA DEBE incluir prioritariamente esos juegos específicos en las sesiones correspondientes.
+2. NO LIMITARSE SOLO A LOS MARCADOS: Los juegos seleccionados manualmente NO deben ser los únicos. La IA DEBE examinar el resto de la documentación aportada (PDF, Word, Excel o Drive) y extraer otros juegos y tareas motrices acordes a la temática ("${tematica}") y ciclo (${curso} - ${ciclo}) para completar la secuencia.
+3. SI NO SE MARCAN JUEGOS EN EL BANCO: La IA rastreará automáticamente toda la documentación aportada y seleccionará por sí misma los juegos más idóneos y coherentes con la temática "${tematica}".
+4. COMPLEMENTACIÓN CON IA SI FALTA INFORMACIÓN: Si en los documentos aportados no hay suficientes juegos para cubrir todas las fases de las ${numSesiones} sesiones, o si la información de algún juego es esquemática, la IA Gemini DEBE autocompletar e inventar de forma transparente los juegos restantes respetando estrictamente la temática "${tematica}".
+5. CUMPLIMENTACIÓN EN 4 SECCIONES: Cada juego (sea extraído o autocompletado por IA) DEBE llevar sus 4 apartados desarrollados (1. Organización Espacial, 2. Roles, 3. Desarrollo y Reglas, 4. Variaciones DUA/Seguridad).`;
     } else {
-      documentationInstruction = `Genera actividades y juegos originales, altamente pedagógicos e innovadores para Educación Física, acordes a la temática "${tematica}" y nivel ${curso} (${ciclo}). Cada juego debe incluir su desarrollo explicativo completo con los 4 apartados obligatorios.`;
+      documentationInstruction = `Genera actividades y juegos originales, altamente pedagógicos e innovadores para Educación Física, acordes a la temática "${tematica}" y nivel ${curso} (${ciclo}). Si no hay documentación aportada, la IA buscará y seleccionará autónomamente los juegos más adecuados para esta temática y nivel, desarrollando cada uno con sus 4 apartados obligatorios.`;
     }
 
     const prompt = `Diseña una secuencia didáctica completa de EXACTAMENTE ${numSesiones} SESIONES de Educación Física (60 minutos cada una).

@@ -363,15 +363,17 @@ export async function generateSessionsApi(params: {
         let docContextPrompt = '';
         if (params.driveDocumentationText && params.driveDocumentationText.trim().length > 0) {
           docContextPrompt = `
-INSTRUCCIÓN CRÍTICA DE ANÁLISIS DE DOCUMENTACIÓN COMPARTIDA:
+INSTRUCCIÓN CRÍTICA DE SELECCIÓN Y COMPLECIÓN DE JUEGOS CON DOCUMENTACIÓN:
 El docente ha adjuntado los siguientes archivos y guías didácticas (Word, PDF, Excel o Drive):
 --- INICIO DOCUMENTACIÓN ADJUNTA ---
 ${params.driveDocumentationText.slice(0, 18000)}
 --- FIN DOCUMENTACIÓN ADJUNTA ---
 
-REGLAS DE OBLIGADO CUMPLIMIENTO CON LOS DOCUMENTOS:
-1. Lee atentamente los juegos y ejercicios de los archivos superiores e intégralos en las sesiones.
-2. NO INVENTES ni fuerces referencias a Andalucía si no están en los documentos o en la temática.`;
+JERARQUÍA OBLIGATORIA DE SELECCIÓN:
+1. Incluye prioritariamente los juegos etiquetados como "JUEGO SELECCIONADO POR EL DOCENTE".
+2. NO te limites solo a los juegos marcados: examina toda la documentación adjunta y añade otros juegos relevantes que encajen con la temática "${params.tematica}".
+3. Si el docente no marcó juegos en el banco, busca y selecciona automáticamente en la documentación aportada los juegos más adecuados para la temática.
+4. Si la documentación no alcanza para cubrir todas las fases de las ${params.numSesiones} sesiones, autocompleta transparente con IA Gemini creando juegos acordes a la temática.`;
         }
 
         const prompt = `Diseña una secuencia didáctica completa de EXACTAMENTE ${params.numSesiones} SESIONES de Educación Física (60 min cada una).
