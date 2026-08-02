@@ -35,47 +35,52 @@ function getPdfParser() {
   return null;
 }
 
-// Lazy initializer for Gemini Client (soporta clave de API y Token OAuth del usuario logueado con Google)
-function getGenAIClient(customApiKey?: string, googleAccessToken?: string) {
-  const headers: Record<string, string> = {
-    'User-Agent': 'aistudio-build',
-  };
-
-  const token = (googleAccessToken && googleAccessToken.trim()) || (typeof localStorage !== 'undefined' ? localStorage.getItem('google_access_token') || '' : '');
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-    // Si se pasa token OAuth Bearer en cabeceras, la API de Google prohíbe pasar apiKey simultáneamente (401 OVERLOADED_CREDENTIALS)
-    return new GoogleGenAI({
-      apiKey: '',
-      httpOptions: {
-        headers,
-      },
-    });
+// Resolver clave de API de Gemini funcional (prioriza clave personalizada, luego GEMINI_API_KEY o VITE_FIREBASE_API_KEY)
+function resolveGeminiApiKey(customApiKey?: string): string {
+  if (customApiKey && customApiKey.trim() && !customApiKey.startsWith('AQ.') && !customApiKey.includes('PLACEHOLDER')) {
+    return customApiKey.trim();
   }
+  const envKey = process.env.GEMINI_API_KEY;
+  if (envKey && envKey.trim() && !envKey.startsWith('AQ.') && !envKey.includes('PLACEHOLDER')) {
+    return envKey.trim();
+  }
+  const firebaseKey = process.env.VITE_FIREBASE_API_KEY;
+  if (firebaseKey && firebaseKey.trim()) {
+    return firebaseKey.trim();
+  }
+  return '';
+}
 
-  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY || '';
+// Lazy initializer para el cliente oficial de Google Gemini
+function getGenAIClient(customApiKey?: string) {
+  const apiKey = resolveGeminiApiKey(customApiKey);
 
   return new GoogleGenAI({
     apiKey,
     httpOptions: {
-      headers,
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
     },
   });
 }
 
-// Helper to execute Gemini requests with automatic backoff retry & model fallback on 429 / 503 / transient errors
+// Helper para ejecutar peticiones Gemini con reintento automático y fallbacks a modelos oficiales válidos
 async function callGeminiWithRetry(
   ai: GoogleGenAI,
   params: Parameters<typeof ai.models.generateContent>[0],
-  maxRetries = 3
+  maxRetries = 2
 ) {
+  // Modelos oficiales vigentes en la API REST de Google Generative Language
   const modelsToTry = [
-    params.model || 'gemini-3.6-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-flash-latest',
-    'gemini-3.1-pro-preview',
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
   ];
+  if (params.model && !params.model.includes('3.6') && !params.model.includes('3.1')) {
+    modelsToTry.unshift(params.model);
+  }
   const uniqueModels = Array.from(new Set(modelsToTry));
 
   let lastError: any = null;
@@ -88,60 +93,25 @@ async function callGeminiWithRetry(
         const response = await ai.models.generateContent(currentParams);
 
         const firstCandidate = response.candidates?.[0];
-        const finishReason = firstCandidate?.finishReason || 'DESCONOCIDO';
+        const finishReason = firstCandidate?.finishReason || 'STOP';
         const safetyRatings = firstCandidate?.safetyRatings || [];
 
-        console.log(`[Gemini API - Respuesta Recibida]`);
-        console.log(`  1. Modelo solicitado/candidato: ${modelCandidate}`);
-        console.log(`  2. Versión real del modelo (modelVersion): ${response.modelVersion || modelCandidate}`);
+        console.log(`[Gemini API - Éxito] Modelo: ${modelCandidate} (modelVersion: ${response.modelVersion || modelCandidate})`);
         if (response.usageMetadata) {
-          console.log(`  3. Uso de Tokens (usageMetadata):`, {
-            promptTokenCount: response.usageMetadata.promptTokenCount,
-            candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
-            totalTokenCount: response.usageMetadata.totalTokenCount,
-          });
+          console.log(`  Usage Tokens -> Prompt: ${response.usageMetadata.promptTokenCount}, Candidates: ${response.usageMetadata.candidatesTokenCount}, Total: ${response.usageMetadata.totalTokenCount}`);
         }
-        console.log(`  4. Razón de finalización (finishReason): ${finishReason}`);
-        console.log(`  5. Evaluaciones de Seguridad (safetyRatings):`, JSON.stringify(safetyRatings));
 
         return response;
       } catch (err: any) {
         lastError = err;
         const errStr = String(err?.message || err || '');
-        const statusCode = err?.status || err?.statusCode || err?.code;
-
-        const isTransientError =
-          statusCode === 429 ||
-          statusCode === 503 ||
-          statusCode === 500 ||
-          statusCode === 502 ||
-          statusCode === 504 ||
-          errStr.includes('429') ||
-          errStr.includes('503') ||
-          errStr.includes('UNAVAILABLE') ||
-          errStr.includes('high demand') ||
-          errStr.includes('RESOURCE_EXHAUSTED') ||
-          errStr.includes('Quota exceeded') ||
-          errStr.includes('quota') ||
-          errStr.includes('overloaded');
-
-        if (isTransientError && attempt < maxRetries) {
-          attempt++;
-          const delayMs = attempt * 1200 + Math.floor(Math.random() * 400);
-          console.warn(`[Gemini API - ${modelCandidate}] Error temporal (${statusCode || 'API'}). Reintentando (${attempt}/${maxRetries}) en ${delayMs}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-        } else if (isTransientError) {
-          console.warn(`[Gemini API - ${modelCandidate}] Agotados reintentos por error temporal. Probando modelo de respaldo...`);
-          break; // Try next fallback model
-        } else {
-          console.warn(`[Gemini API - ${modelCandidate}] Error no directo: ${errStr}. Probando modelo de respaldo...`);
-          break; // Try next fallback model
-        }
+        console.warn(`[Gemini API - ${modelCandidate}] Falló: ${errStr.slice(0, 150)}`);
+        break; // Probar siguiente modelo candidato
       }
     }
   }
 
-  throw lastError || new Error('El servicio de la API de Gemini no está disponible en este momento. Por favor, inténtalo de nuevo en unos instantes.');
+  throw lastError || new Error('El servicio de la API de Gemini no está disponible en este momento. Por favor, inténtalo de nuevo.');
 }
 
 // System instruction prompt for EF LOMLOE Expert
@@ -573,19 +543,19 @@ app.post('/api/ai/generate-justification', async (req, res) => {
       return res.status(400).json({ error: 'Título y temática son requeridos.' });
     }
 
-    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
-    const prompt = `Redacta una justificación pedagógica y motivadora (entre 120 y 200 palabras) para una Situación de Aprendizaje de Educación Física en Andalucía.
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const prompt = `Redacta una justificación pedagógica, apasionante y motivadora (entre 180 y 260 palabras) para una Situación de Aprendizaje de Educación Física.
 Título: "${titulo}"
 Curso/Nivel: ${curso} (${ciclo})
 Temática principal: ${tematica}
 
-Instrucciones:
+Instrucciones pedagógicas:
 - Justifica la pertinencia de la temática según el desarrollo psicoevolutivo del alumnado de ${curso}.
-- Conecta con la relevancia para la vida diaria, el fomento de hábitos saludables, la inclusión DUA y los valores del Decreto 101/2023 de Andalucía.
+- Conecta con la relevancia para la vida diaria, el fomento de hábitos saludables, la inclusión DUA y las competencias clave LOMLOE.
 - Devuelve únicamente el texto de la justificación redactado en Markdown limpio.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -608,14 +578,14 @@ app.post('/api/ai/generate-rubric', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere una lista de criterios de evaluación.' });
     }
 
-    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
-    const prompt = `Genera los descriptores de una Rúbrica de Evaluación Formativa para los siguientes Criterios de Evaluación de Educación Física (LOMLOE Andalucía):
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const prompt = `Genera los descriptores de una Rúbrica de Evaluación Formativa para los siguientes Criterios de Evaluación de Educación Física (LOMLOE):
 ${JSON.stringify(criterios, null, 2)}
 
 Devuelve una respuesta en formato JSON estricto con el siguiente esquema:
 [
   {
-    "criterioCodigo": "código del criterio (ej: EFI.2.1.2.b)",
+    "criterioCodigo": "código del criterio",
     "criterioTexto": "texto del criterio",
     "niveles": [
       { "nivel": "Iniciado (1-4)", "descriptor": "descripción del desempeño para nivel iniciado" },
@@ -627,7 +597,7 @@ Devuelve una respuesta en formato JSON estricto con el siguiente esquema:
 ]`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -648,19 +618,19 @@ Devuelve una respuesta en formato JSON estricto con el siguiente esquema:
 app.post('/api/ai/generate-final-challenge', async (req, res) => {
   try {
     const { titulo, curso, tematica, metodologia } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
-    const prompt = `Propón un Producto Final o Reto Motor motivador, significativo e inclusivo para culminar una Situación de Aprendizaje de Educación Física en Andalucía.
+    const prompt = `Propón un Producto Final o Reto Motor motivador, significativo e inclusivo para culminar una Situación de Aprendizaje de Educación Física.
 Título: "${titulo}"
 Curso: ${curso}
 Temática: ${tematica}
 Metodología: ${metodologia}
 
-Proporciona un título para el Reto y una descripción detallada (80-150 palabras) explicando en qué consiste, cómo participa todo el alumnado y cuál es la meta colectiva.
+Proporciona un título para el Reto y una descripción detallada (100-180 palabras) explicando en qué consiste, cómo participa todo el alumnado y cuál es la meta colectiva.
 Devuelve en formato JSON: { "tituloReto": "...", "descripcionReto": "..." }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -690,7 +660,7 @@ app.post('/api/ai/generate-sessions', async (req, res) => {
       userGeminiApiKey,
     } = req.body;
 
-    const ai = getGenAIClient(userGeminiApiKey, req.body.googleAccessToken);
+    const ai = getGenAIClient(userGeminiApiKey);
 
     let documentationInstruction = '';
     if (driveDocumentationText && driveDocumentationText.trim().length > 0) {
@@ -794,7 +764,7 @@ Devuelve una respuesta JSON estricta con este formato:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -899,9 +869,9 @@ Devuelve una respuesta JSON estricta con este formato:
 app.post('/api/ai/enrich-game-description', async (req, res) => {
   try {
     const { nombreJuego, descripcion, tematica, curso } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
-    const prompt = `Actúa como Catedrático Experto en Didáctica de la Educación Física y LOMLOE en Andalucía.
+    const prompt = `Actúa como Catedrático Experto en Didáctica de la Educación Física y LOMLOE.
 Completa, re-genera o desarrolla en su totalidad el siguiente juego/actividad para Educación Física (${curso || 'Educación Primaria'}, temática: "${tematica || 'General'}"):
 
 Nombre del juego actual: "${nombreJuego || 'Juego o Actividad de EF'}"
@@ -937,7 +907,7 @@ Devuelve un JSON estricto con:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -967,7 +937,7 @@ app.post('/api/ai/enrich-full-session', async (req, res) => {
       return res.status(400).json({ error: 'Datos de sesión incompletos.' });
     }
 
-    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
     const prompt = `Actúa como Catedrático de Educación Física. Analiza y autocompleta/enriquece TODAS las actividades de la siguiente sesión.
 Si alguna actividad está vacía, incompleta, sin explicación o con datos escasos, REGENÉRALA O COMPLÉTALA con un juego de Educación Física muy detallado para ${curso || 'Primaria'} y temática "${tematica || 'General'}".
 
@@ -1000,7 +970,7 @@ Devuelve un JSON estricto con la estructura de la sesión actualizada:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -1102,7 +1072,7 @@ app.post('/api/parse-local-file', async (req, res) => {
 app.post('/api/ai/generate-diversity', async (req, res) => {
   try {
     const { neaeSeleccionadas, necesidades, sdaContext, tematica, ciclo, curso } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
     const activeCases = (neaeSeleccionadas && Array.isArray(neaeSeleccionadas) && neaeSeleccionadas.length > 0)
       ? neaeSeleccionadas
@@ -1150,7 +1120,7 @@ Devuelve una respuesta JSON estricta con esta estructura:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -1177,7 +1147,7 @@ Devuelve una respuesta JSON estricta con esta estructura:
 app.post('/api/ai/generate-initial-eval', async (req, res) => {
   try {
     const { tematica, curso, ciclo } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
+    const ai = getGenAIClient(req.body.userGeminiApiKey);
 
     const prompt = `Diseña la Evaluación Inicial y Diagnóstica para una SdA de Educación Física (${tematica || 'General'}, ${curso || ciclo || 'Primaria'}).
 Devuelve en formato JSON estricto:
@@ -1194,7 +1164,7 @@ Devuelve en formato JSON estricto:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -1242,7 +1212,7 @@ Devuelve una respuesta JSON estricta con el siguiente formato:
 ]`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,

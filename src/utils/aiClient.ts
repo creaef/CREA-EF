@@ -15,16 +15,20 @@ async function callGeminiREST(
   systemInstruction?: string,
   responseMimeType?: string
 ): Promise<string> {
-  const apiKey =
+  let apiKey =
     (typeof localStorage !== 'undefined' && localStorage.getItem('user_gemini_api_key')?.trim()) ||
     process.env.GEMINI_API_KEY ||
     (import.meta as any).env?.VITE_GEMINI_API_KEY;
 
   if (!apiKey || apiKey.startsWith('AQ.') || apiKey.includes('PLACEHOLDER')) {
+    apiKey = (import.meta as any).env?.VITE_FIREBASE_API_KEY;
+  }
+
+  if (!apiKey || apiKey.includes('PLACEHOLDER')) {
     throw new Error('API_KEY_INVALID');
   }
 
-  const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
