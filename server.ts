@@ -28,18 +28,33 @@ function getStripeClient(): Stripe | null {
 
 app.use(express.json({ limit: '10mb' }));
 
+function getPdfParser() {
+  if (typeof pdfParseModule === 'function') return pdfParseModule;
+  if (typeof (pdfParseModule as any).default === 'function') return (pdfParseModule as any).default;
+  if (typeof (pdfParseModule as any).default?.default === 'function') return (pdfParseModule as any).default.default;
+  return null;
+}
+
 // Lazy initializer for Gemini Client (soporta clave de API y Token OAuth del usuario logueado con Google)
 function getGenAIClient(customApiKey?: string, googleAccessToken?: string) {
-  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY || 'oauth-vehicle';
-  
   const headers: Record<string, string> = {
     'User-Agent': 'aistudio-build',
   };
 
   const token = (googleAccessToken && googleAccessToken.trim()) || (typeof localStorage !== 'undefined' ? localStorage.getItem('google_access_token') || '' : '');
+  
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    // Si se pasa token OAuth Bearer en cabeceras, la API de Google prohíbe pasar apiKey simultáneamente (401 OVERLOADED_CREDENTIALS)
+    return new GoogleGenAI({
+      apiKey: '',
+      httpOptions: {
+        headers,
+      },
+    });
   }
+
+  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY || '';
 
   return new GoogleGenAI({
     apiKey,
@@ -1022,8 +1037,13 @@ app.post('/api/parse-local-file', async (req, res) => {
 
     if (ext === '.pdf') {
       try {
-        const data = await pdfParse(buffer);
-        extractedText = data.text || '';
+        const parserFn = getPdfParser();
+        if (typeof parserFn === 'function') {
+          const data = await parserFn(buffer);
+          extractedText = data.text || '';
+        } else {
+          extractedText = buffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\táéíóúÁÉÍÓÚñÑ]/g, ' ');
+        }
       } catch (pdfErr) {
         console.error('Error parseando PDF:', pdfErr);
         extractedText = buffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\táéíóúÁÉÍÓÚñÑ]/g, ' ');
