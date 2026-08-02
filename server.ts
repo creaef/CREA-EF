@@ -70,7 +70,26 @@ async function callGeminiWithRetry(
     while (attempt <= maxRetries) {
       try {
         const currentParams = { ...params, model: modelCandidate };
-        return await ai.models.generateContent(currentParams);
+        const response = await ai.models.generateContent(currentParams);
+
+        const firstCandidate = response.candidates?.[0];
+        const finishReason = firstCandidate?.finishReason || 'DESCONOCIDO';
+        const safetyRatings = firstCandidate?.safetyRatings || [];
+
+        console.log(`[Gemini API - Respuesta Recibida]`);
+        console.log(`  1. Modelo solicitado/candidato: ${modelCandidate}`);
+        console.log(`  2. Versión real del modelo (modelVersion): ${response.modelVersion || modelCandidate}`);
+        if (response.usageMetadata) {
+          console.log(`  3. Uso de Tokens (usageMetadata):`, {
+            promptTokenCount: response.usageMetadata.promptTokenCount,
+            candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
+            totalTokenCount: response.usageMetadata.totalTokenCount,
+          });
+        }
+        console.log(`  4. Razón de finalización (finishReason): ${finishReason}`);
+        console.log(`  5. Evaluaciones de Seguridad (safetyRatings):`, JSON.stringify(safetyRatings));
+
+        return response;
       } catch (err: any) {
         lastError = err;
         const errStr = String(err?.message || err || '');
