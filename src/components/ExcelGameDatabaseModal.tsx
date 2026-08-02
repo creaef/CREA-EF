@@ -219,6 +219,24 @@ export const ExcelGameDatabaseModal: React.FC<ExcelGameDatabaseModalProps> = ({
     setSelectedGames([]);
   };
 
+  const handleSendSelectedToAI = () => {
+    if (selectedGames.length === 0) {
+      setErrorMsg('Por favor, selecciona al menos un juego de la lista para enviarlo a la IA.');
+      return;
+    }
+    const selectedList = games.filter((g) => selectedGames.includes(g.id));
+    if (onGamesImportedForAI) {
+      const summary = selectedList
+        .map(
+          (g) =>
+            `* JUEGO SELECCIONADO POR EL DOCENTE: "${g.nombre}"\n  Temática: ${g.tematica} | Ciclo/Nivel: ${g.ciclo} | Materiales: ${g.material}\n  Desarrollo y Reglas: ${g.descripcion}`
+        )
+        .join('\n\n');
+      onGamesImportedForAI(summary);
+      setStatusMsg(`¡Éxito! Se han enviado ${selectedList.length} juego(s) seleccionado(s) como fuente prioritaria para la IA.`);
+    }
+  };
+
   const handleClearAllGames = () => {
     setGames([]);
     setSelectedGames([]);
@@ -451,16 +469,46 @@ export const ExcelGameDatabaseModal: React.FC<ExcelGameDatabaseModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t border-slate-200 p-4 flex items-center justify-between">
-          <span className="text-xs text-slate-500 font-medium">
-            Los juegos importados quedarán guardados en tu navegador y enriquecerán las sesiones generadas.
-          </span>
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition"
-          >
-            Cerrar Banco de Juegos
-          </button>
+        <div className="bg-slate-50 border-t border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center space-x-2">
+            {selectedGames.length > 0 && (
+              <span className="text-xs font-bold bg-emerald-100 text-emerald-900 px-3 py-1 rounded-lg border border-emerald-300">
+                {selectedGames.length} juego(s) seleccionado(s)
+              </span>
+            )}
+            <span className="text-xs text-slate-500 font-medium">
+              Los juegos importados quedan guardados en tu navegador y enriquecerán las sesiones generadas.
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {selectedGames.length > 0 && (
+              <>
+                <button
+                  onClick={handleSendSelectedToAI}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-sm flex items-center space-x-1.5 transition"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-100" />
+                  <span>🎯 Enviar los {selectedGames.length} juegos seleccionados a la IA</span>
+                </button>
+
+                <button
+                  onClick={handleAddSelectedToSession}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs shadow-sm flex items-center space-x-1.5 transition"
+                >
+                  <Plus className="w-4 h-4 text-emerald-100" />
+                  <span>Añadir a Sesión {targetSessionIdx + 1}</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition"
+            >
+              Cerrar Banco de Juegos
+            </button>
+          </div>
         </div>
       </div>
     </div>

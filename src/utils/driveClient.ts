@@ -98,6 +98,37 @@ export async function readDriveFilesClient(
         const arrayBuffer = await res.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         extractedText = result.value || '';
+      } else if (lowerName.endsWith('.pdf') || mimeType === 'application/pdf') {
+        const arrayBuffer = await res.arrayBuffer();
+        let pdfText = '';
+        try {
+          let binary = '';
+          const bytes = new Uint8Array(arrayBuffer);
+          const len = Math.min(bytes.byteLength, 5 * 1024 * 1024);
+          for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          const base64Data = btoa(binary);
+
+          const parseRes = await fetch('/api/parse-local-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName: name, base64Data }),
+          });
+          if (parseRes.ok) {
+            const parsedData = await parseRes.json();
+            pdfText = parsedData.extractedText || '';
+          }
+        } catch (e) {
+          console.warn('Error parseando PDF de Drive en servidor:', e);
+        }
+
+        if (!pdfText) {
+          const decoder = new TextDecoder('utf-8', { fatal: false });
+          const raw = decoder.decode(arrayBuffer);
+          pdfText = raw.replace(/[^\x20-\x7E\xA0-\xFF\n\r\t]/g, ' ').replace(/\s+/g, ' ').slice(0, 15000);
+        }
+        extractedText = pdfText;
       } else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || lowerName.endsWith('.csv')) {
         const arrayBuffer = await res.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, {

@@ -687,6 +687,9 @@ ${documentationInstruction}
 INSTRUCCIÓN MANDATORIA Y CRÍTICA PARA CADA UNA DE LAS SESIONES (DESDE LA SESIÓN 1 HASTA LA SESIÓN ${numSesiones}):
 Debes generar un array "sesiones" con EXACTAMENTE ${numSesiones} OBJETOS DE SESIÓN (desde numeroSesion 1 hasta numeroSesion ${numSesiones}). NINGUNA SESIÓN PUEDE SER ABREVIADA O RESUMIDA.
 
+REGLA ANTI-REPETICIÓN Y VARIEDAD MOTRIZ MANDATORIA:
+Queda ABSOLUTAMENTE PROHIBIDO repetir el mismo juego o el mismo nombre de juego en diferentes sesiones o fases. Cada juego o tarea motriz debe tener un nombre único, ser original y estar directamente alineado con la temática "${tematica}" y el ciclo "${ciclo}".
+
 ¡REGLA INDISPENSABLE DE ESTRUCTURA Y CONTENIDO PARA CADA JUEGO EN TODAS LAS SESIONES (1, 2, 3, 4, ..., ${numSesiones})!:
 Queda ESTRICTAMENTE PROHIBIDO recortar o resumir las explicaciones a partir de la Sesión 2. TODAS Y CADA UNA DE LAS SESIONES DEBEN CONTENER EXPLICACIONES EXTENSAS Y DETALLADAS (mínimo 180-250 palabras por juego) CON LOS 4 APARTADOS OBLIGATORIOS Y FORMATO CON VIÑETAS (-):
 
