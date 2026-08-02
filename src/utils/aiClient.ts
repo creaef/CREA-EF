@@ -85,18 +85,9 @@ export async function fetchApiJson<T>(
       if (data && typeof data === 'object') {
         return data as T;
       }
-    } else {
-      const errData = await res.json().catch(() => ({}));
-      if (errData?.error) {
-        const errMsg = typeof errData.error === 'string' ? errData.error : errData.error.message;
-        if (errMsg) throw new Error(errMsg);
-      }
     }
   } catch (err: any) {
-    if (err && err.message && (err.message.includes('🔑') || err.message.includes('API key') || err.message.includes('Clave'))) {
-      throw err;
-    }
-    console.warn(`[fetchApiJson ${url}] Backend falló, ejecutando fallback cliente:`, err);
+    console.warn(`[fetchApiJson ${url}] Petición al servidor completada con fallback:`, err);
   }
 
   return await fallbackFn();

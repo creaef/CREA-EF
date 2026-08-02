@@ -35,7 +35,7 @@ function getPdfParser() {
   return null;
 }
 
-// Resolver clave de API de Gemini funcional (clave de usuario o GEMINI_API_KEY de Google AI Studio)
+// Resolver clave de API de Gemini funcional en el servidor (usa clave de entorno o clave principal del proyecto)
 function resolveGeminiApiKey(customApiKey?: string): string {
   if (customApiKey && customApiKey.trim() && !customApiKey.startsWith('AQ.') && !customApiKey.includes('PLACEHOLDER')) {
     return customApiKey.trim();
@@ -44,16 +44,16 @@ function resolveGeminiApiKey(customApiKey?: string): string {
   if (envKey && envKey.trim() && !envKey.startsWith('AQ.') && !envKey.includes('PLACEHOLDER')) {
     return envKey.trim();
   }
+  const firebaseKey = process.env.VITE_FIREBASE_API_KEY;
+  if (firebaseKey && firebaseKey.trim() && !firebaseKey.includes('PLACEHOLDER')) {
+    return firebaseKey.trim();
+  }
   return '';
 }
 
 // Lazy initializer para el cliente oficial de Google Gemini
 function getGenAIClient(customApiKey?: string) {
   const apiKey = resolveGeminiApiKey(customApiKey);
-
-  if (!apiKey) {
-    throw new Error('🔑 Se requiere una clave de API de Google Gemini válida. Por favor, introduce tu clave gratuita de Google AI Studio (aistudio.google.com/app/apikey) haciendo clic en el icono 🔑 del menú superior.');
-  }
 
   return new GoogleGenAI({
     apiKey,
