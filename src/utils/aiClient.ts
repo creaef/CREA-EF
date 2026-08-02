@@ -96,6 +96,12 @@ function getUserApiKey(): string | undefined {
   return key && key.trim() ? key.trim() : undefined;
 }
 
+function getGoogleAccessToken(): string | undefined {
+  if (typeof localStorage === 'undefined') return undefined;
+  const token = localStorage.getItem('sda_drive_access_token') || localStorage.getItem('google_access_token');
+  return token && token.trim() ? token.trim() : undefined;
+}
+
 // 1. Generar Justificación de la SdA con IA Gemini Real
 export async function generateJustificationApi(params: {
   titulo: string;
@@ -108,7 +114,7 @@ export async function generateJustificationApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {
@@ -149,7 +155,7 @@ export async function generateRubricApi(criterios: any[]): Promise<any[]> {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ criterios, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ criterios, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {
@@ -201,7 +207,7 @@ export async function generateInitialEvalApi(params: { tematica: string; curso: 
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {
@@ -247,7 +253,7 @@ export async function generateDiversityApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {
@@ -305,7 +311,7 @@ export async function generateFinalChallengeApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {
@@ -350,7 +356,7 @@ export async function generateSessionsApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {
@@ -482,7 +488,7 @@ export async function enrichFullSessionApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {
@@ -516,7 +522,7 @@ export async function generateEvaluationToolsApi(params: {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey() }),
+      body: JSON.stringify({ ...params, userGeminiApiKey: getUserApiKey(), googleAccessToken: getGoogleAccessToken() }),
     },
     async () => {
       try {

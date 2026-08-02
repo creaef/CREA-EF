@@ -28,18 +28,23 @@ function getStripeClient(): Stripe | null {
 
 app.use(express.json({ limit: '10mb' }));
 
-// Lazy initializer for Gemini Client
-function getGenAIClient(customApiKey?: string) {
-  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('La clave GEMINI_API_KEY no está configurada.');
+// Lazy initializer for Gemini Client (soporta clave de API y Token OAuth del usuario logueado con Google)
+function getGenAIClient(customApiKey?: string, googleAccessToken?: string) {
+  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY || 'oauth-vehicle';
+  
+  const headers: Record<string, string> = {
+    'User-Agent': 'aistudio-build',
+  };
+
+  const token = (googleAccessToken && googleAccessToken.trim()) || (typeof localStorage !== 'undefined' ? localStorage.getItem('google_access_token') || '' : '');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
+
   return new GoogleGenAI({
     apiKey,
     httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
+      headers,
     },
   });
 }
@@ -534,7 +539,7 @@ app.post('/api/ai/generate-justification', async (req, res) => {
       return res.status(400).json({ error: 'Título y temática son requeridos.' });
     }
 
-    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
     const prompt = `Redacta una justificación pedagógica y motivadora (entre 120 y 200 palabras) para una Situación de Aprendizaje de Educación Física en Andalucía.
 Título: "${titulo}"
 Curso/Nivel: ${curso} (${ciclo})
@@ -569,7 +574,7 @@ app.post('/api/ai/generate-rubric', async (req, res) => {
       return res.status(400).json({ error: 'Se requiere una lista de criterios de evaluación.' });
     }
 
-    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
     const prompt = `Genera los descriptores de una Rúbrica de Evaluación Formativa para los siguientes Criterios de Evaluación de Educación Física (LOMLOE Andalucía):
 ${JSON.stringify(criterios, null, 2)}
 
@@ -609,7 +614,7 @@ Devuelve una respuesta en formato JSON estricto con el siguiente esquema:
 app.post('/api/ai/generate-final-challenge', async (req, res) => {
   try {
     const { titulo, curso, tematica, metodologia } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
 
     const prompt = `Propón un Producto Final o Reto Motor motivador, significativo e inclusivo para culminar una Situación de Aprendizaje de Educación Física en Andalucía.
 Título: "${titulo}"
@@ -651,7 +656,7 @@ app.post('/api/ai/generate-sessions', async (req, res) => {
       userGeminiApiKey,
     } = req.body;
 
-    const ai = getGenAIClient(userGeminiApiKey);
+    const ai = getGenAIClient(userGeminiApiKey, req.body.googleAccessToken);
 
     let documentationInstruction = '';
     if (driveDocumentationText && driveDocumentationText.trim().length > 0) {
@@ -856,7 +861,7 @@ Devuelve una respuesta JSON estricta con este formato:
 app.post('/api/ai/enrich-game-description', async (req, res) => {
   try {
     const { nombreJuego, descripcion, tematica, curso } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
 
     const prompt = `Actúa como Catedrático Experto en Didáctica de la Educación Física y LOMLOE en Andalucía.
 Completa, re-genera o desarrolla en su totalidad el siguiente juego/actividad para Educación Física (${curso || 'Educación Primaria'}, temática: "${tematica || 'General'}"):
@@ -924,7 +929,7 @@ app.post('/api/ai/enrich-full-session', async (req, res) => {
       return res.status(400).json({ error: 'Datos de sesión incompletos.' });
     }
 
-    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
     const prompt = `Actúa como Catedrático de Educación Física. Analiza y autocompleta/enriquece TODAS las actividades de la siguiente sesión.
 Si alguna actividad está vacía, incompleta, sin explicación o con datos escasos, REGENÉRALA O COMPLÉTALA con un juego de Educación Física muy detallado para ${curso || 'Primaria'} y temática "${tematica || 'General'}".
 
@@ -1048,7 +1053,7 @@ app.post('/api/parse-local-file', async (req, res) => {
 app.post('/api/ai/generate-diversity', async (req, res) => {
   try {
     const { neaeSeleccionadas, necesidades, sdaContext, tematica, ciclo, curso } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
 
     const activeCases = (neaeSeleccionadas && Array.isArray(neaeSeleccionadas) && neaeSeleccionadas.length > 0)
       ? neaeSeleccionadas
@@ -1123,7 +1128,7 @@ Devuelve una respuesta JSON estricta con esta estructura:
 app.post('/api/ai/generate-initial-eval', async (req, res) => {
   try {
     const { tematica, curso, ciclo } = req.body;
-    const ai = getGenAIClient(req.body.userGeminiApiKey);
+    const ai = getGenAIClient(req.body.userGeminiApiKey, req.body.googleAccessToken);
 
     const prompt = `Diseña la Evaluación Inicial y Diagnóstica para una SdA de Educación Física (${tematica || 'General'}, ${curso || ciclo || 'Primaria'}).
 Devuelve en formato JSON estricto:
