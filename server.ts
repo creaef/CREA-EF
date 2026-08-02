@@ -71,16 +71,14 @@ async function callGeminiWithRetry(
   params: Parameters<typeof ai.models.generateContent>[0],
   maxRetries = 2
 ) {
-  // Modelos oficiales vigentes en la API REST de Google Generative Language
+  // Modelos oficiales vigentes en la API de Google Generative Language (Prioridad Gemini Pro)
   const modelsToTry = [
-    'gemini-2.5-flash',
+    params.model || 'gemini-2.5-pro',
     'gemini-2.5-pro',
-    'gemini-1.5-flash',
     'gemini-1.5-pro',
+    'gemini-2.5-flash',
+    'gemini-1.5-flash',
   ];
-  if (params.model && !params.model.includes('3.6') && !params.model.includes('3.1')) {
-    modelsToTry.unshift(params.model);
-  }
   const uniqueModels = Array.from(new Set(modelsToTry));
 
   let lastError: any = null;
@@ -555,7 +553,7 @@ Instrucciones pedagógicas:
 - Devuelve únicamente el texto de la justificación redactado en Markdown limpio.`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -597,7 +595,7 @@ Devuelve una respuesta en formato JSON estricto con el siguiente esquema:
 ]`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -630,7 +628,7 @@ Proporciona un título para el Reto y una descripción detallada (100-180 palabr
 Devuelve en formato JSON: { "tituloReto": "...", "descripcionReto": "..." }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -764,7 +762,7 @@ Devuelve una respuesta JSON estricta con este formato:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -907,7 +905,7 @@ Devuelve un JSON estricto con:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -970,7 +968,7 @@ Devuelve un JSON estricto con la estructura de la sesión actualizada:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -1120,7 +1118,7 @@ Devuelve una respuesta JSON estricta con esta estructura:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -1164,7 +1162,7 @@ Devuelve en formato JSON estricto:
 }`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
@@ -1212,7 +1210,7 @@ Devuelve una respuesta JSON estricta con el siguiente formato:
 ]`;
 
     const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-pro',
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION_EF,
