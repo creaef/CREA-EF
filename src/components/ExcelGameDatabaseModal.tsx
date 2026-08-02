@@ -76,72 +76,79 @@ export const ExcelGameDatabaseModal: React.FC<ExcelGameDatabaseModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Function to parse XLSX/CSV file buffer or array
+  // Function to parse XLSX/CSV file buffer or array ultra-fast across all sheets
   const parseExcelBuffer = (arrayBuffer: ArrayBuffer, fileName: string) => {
     try {
       setIsParsing(true);
       setErrorMsg(null);
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-      if (!rawRows || rawRows.length === 0) {
-        setErrorMsg('El archivo Excel no contiene filas de datos.');
-        setIsParsing(false);
-        return;
-      }
+      // Fast XLSX read disabling unneeded styling/formula evaluation
+      const workbook = XLSX.read(arrayBuffer, {
+        type: 'array',
+        cellFormula: false,
+        cellHTML: false,
+        cellStyles: false,
+        sheetStubs: false,
+      });
 
       const parsed: ExcelGame[] = [];
 
-      rawRows.forEach((row, idx) => {
-        // Find keys dynamically (case-insensitive)
-        let nombre = '';
-        let tematica = '';
-        let criterio = '';
-        let ciclo = '';
-        let descripcion = '';
-        let material = '';
+      workbook.SheetNames.forEach((sheetName) => {
+        const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) return;
 
-        Object.keys(row).forEach((k) => {
-          const keyLower = k.toLowerCase().trim();
-          const val = String(row[k]).trim();
+        const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        if (!rawRows || rawRows.length === 0) return;
 
-          if (keyLower.includes('nombre') || keyLower.includes('juego') || keyLower.includes('actividad') || keyLower.includes('titulo')) {
-            if (!nombre) nombre = val;
-          } else if (keyLower.includes('temat') || keyLower.includes('contenido') || keyLower.includes('categoria')) {
-            if (!tematica) tematica = val;
-          } else if (keyLower.includes('criterio') || keyLower.includes('evalua') || keyLower.includes('competenc')) {
-            if (!criterio) criterio = val;
-          } else if (keyLower.includes('ciclo') || keyLower.includes('nivel') || keyLower.includes('curso') || keyLower.includes('etapa')) {
-            if (!ciclo) ciclo = val;
-          } else if (keyLower.includes('descrip') || keyLower.includes('desarrollo') || keyLower.includes('regla') || keyLower.includes('explicacion')) {
-            if (!descripcion) descripcion = val;
-          } else if (keyLower.includes('material') || keyLower.includes('recurso')) {
-            if (!material) material = val;
+        rawRows.forEach((row, idx) => {
+          let nombre = '';
+          let tematica = '';
+          let criterio = '';
+          let ciclo = '';
+          let descripcion = '';
+          let material = '';
+
+          Object.keys(row).forEach((k) => {
+            const keyLower = k.toLowerCase().trim();
+            const val = String(row[k]).trim();
+            if (!val) return;
+
+            if (keyLower.includes('nombre') || keyLower.includes('juego') || keyLower.includes('actividad') || keyLower.includes('titulo')) {
+              if (!nombre) nombre = val;
+            } else if (keyLower.includes('temat') || keyLower.includes('contenido') || keyLower.includes('categoria')) {
+              if (!tematica) tematica = val;
+            } else if (keyLower.includes('criterio') || keyLower.includes('evalua') || keyLower.includes('competenc')) {
+              if (!criterio) criterio = val;
+            } else if (keyLower.includes('ciclo') || keyLower.includes('nivel') || keyLower.includes('curso') || keyLower.includes('etapa')) {
+              if (!ciclo) ciclo = val;
+            } else if (keyLower.includes('descrip') || keyLower.includes('desarrollo') || keyLower.includes('regla') || keyLower.includes('explicacion')) {
+              if (!descripcion) descripcion = val;
+            } else if (keyLower.includes('material') || keyLower.includes('recurso')) {
+              if (!material) material = val;
+            }
+          });
+
+          // Fallback positioning if headers were generic
+          if (!nombre && row['A']) nombre = String(row['A']);
+          if (!descripcion && row['E']) descripcion = String(row['E']);
+
+          if (nombre && nombre.toLowerCase() !== 'nombre' && nombre.toLowerCase() !== 'juego') {
+            parsed.push({
+              id: `excel-${Date.now()}-${sheetName}-${idx}`,
+              nombre,
+              tematica: tematica || sheetName || 'General EF',
+              criterio: criterio || 'General',
+              ciclo: ciclo || 'Todos los Ciclos',
+              descripcion: descripcion || 'Sin descripción.',
+              material: material || 'Sin material específico',
+              origen: `${fileName} (${sheetName})`,
+            });
           }
         });
-
-        // Fallback positioning if headers were generic
-        if (!nombre && row['A']) nombre = String(row['A']);
-        if (!descripcion && row['E']) descripcion = String(row['E']);
-
-        if (nombre && nombre.toLowerCase() !== 'nombre' && nombre.toLowerCase() !== 'juego') {
-          parsed.push({
-            id: `excel-${Date.now()}-${idx}`,
-            nombre,
-            tematica: tematica || 'General EF',
-            criterio: criterio || 'General',
-            ciclo: ciclo || 'Todos los Ciclos',
-            descripcion: descripcion || 'Sin descripción.',
-            material: material || 'Sin material específico',
-            origen: fileName,
-          });
-        }
       });
 
       if (parsed.length === 0) {
-        setErrorMsg('No se detectaron columnas válidas de juegos. Asegúrate de tener columnas como: Nombre, Temática, Criterio, Ciclo, Descripción, Material.');
+        setErrorMsg('No se detectaron filas válidas de juegos. Asegúrate de tener columnas como: Nombre, Temática, Criterio, Ciclo, Descripción, Material.');
       } else {
         const merged = [...parsed, ...games];
         setGames(merged);

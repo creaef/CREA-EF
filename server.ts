@@ -1015,7 +1015,13 @@ app.post('/api/parse-local-file', async (req, res) => {
       }
     } else if (ext === '.xlsx' || ext === '.xls' || ext === '.csv') {
       try {
-        const workbook = XLSX.read(buffer, { type: 'buffer' });
+        const workbook = XLSX.read(buffer, {
+          type: 'buffer',
+          cellFormula: false,
+          cellHTML: false,
+          cellStyles: false,
+          sheetStubs: false,
+        });
         const sheetTexts: string[] = [];
         workbook.SheetNames.forEach((sheetName) => {
           const sheet = workbook.Sheets[sheetName];

@@ -100,13 +100,24 @@ export async function readDriveFilesClient(
         extractedText = result.value || '';
       } else if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || lowerName.endsWith('.csv')) {
         const arrayBuffer = await res.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const workbook = XLSX.read(arrayBuffer, {
+          type: 'array',
+          cellFormula: false,
+          cellHTML: false,
+          cellStyles: false,
+          sheetStubs: false,
+        });
+        const sheetTexts: string[] = [];
         for (const sheetName of workbook.SheetNames) {
           const sheet = workbook.Sheets[sheetName];
           if (sheet) {
-            extractedText += XLSX.utils.sheet_to_txt(sheet) + '\n';
+            const csvText = XLSX.utils.sheet_to_csv(sheet);
+            if (csvText && csvText.trim()) {
+              sheetTexts.push(`--- HOJA: ${sheetName} ---\n${csvText.trim()}`);
+            }
           }
         }
+        extractedText = sheetTexts.join('\n\n');
       } else {
         extractedText = await res.text();
       }

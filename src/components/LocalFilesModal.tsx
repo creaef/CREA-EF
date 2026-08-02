@@ -37,40 +37,39 @@ export const LocalFilesModal: React.FC<LocalFilesModalProps> = ({
     if (!files || files.length === 0) return;
     setIsUploading(true);
     setErrorMsg(null);
-    setStatusMsg(null);
+    setStatusMsg(`Procesando ${files.length} archivo(s)...`);
 
     let totalChars = 0;
     const newAddedFiles: { name: string; size: number; charCount: number }[] = [];
+    const fileArray = Array.from(files);
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      try {
-        setStatusMsg(`Leyendo y procesando "${file.name}"...`);
+    await Promise.all(
+      fileArray.map(async (file) => {
+        try {
+          const parsed = await parseLocalFileClient(file);
+          const extractedText = parsed.text;
+          const charCount = parsed.charCount;
 
-        // Directly parse local file using client-side JavaScript (supports Word, PDF, Excel, Text)
-        const parsed = await parseLocalFileClient(file);
-        const extractedText = parsed.text;
-        const charCount = parsed.charCount;
-
-        if (extractedText) {
-          onAddLocalDocumentation(extractedText, file.name);
-          totalChars += charCount;
-          newAddedFiles.push({
-            name: file.name,
-            size: file.size,
-            charCount,
-          });
+          if (extractedText) {
+            onAddLocalDocumentation(extractedText, file.name);
+            totalChars += charCount;
+            newAddedFiles.push({
+              name: file.name,
+              size: file.size,
+              charCount,
+            });
+          }
+        } catch (err: any) {
+          console.error('Error procesando archivo:', err);
+          setErrorMsg(err.message || `No se pudo leer el archivo ${file.name}`);
         }
-      } catch (err: any) {
-        console.error('Error procesando archivo:', err);
-        setErrorMsg(err.message || `No se pudo leer el archivo ${file.name}`);
-      }
-    }
+      })
+    );
 
     setIsUploading(false);
     if (newAddedFiles.length > 0) {
       setUploadedFiles((prev) => [...prev, ...newAddedFiles]);
-      setStatusMsg(`¡Exitoso! Se han procesado ${newAddedFiles.length} archivo(s) local(es) (${totalChars} caracteres extraídos).`);
+      setStatusMsg(`¡Éxito! Se han procesado ${newAddedFiles.length} archivo(s) local(es) (${totalChars} caracteres extraídos).`);
     }
   };
 
